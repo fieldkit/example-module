@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -e
+
+bash ./compile
+
+pushd build
+sleep 1
+sudo -E ~/tools/bin/flasher --binary ./fk-module-dummy.bin --port /dev/ttyACM0
+sleep 1
+sudo -E ~/tools/bin/flasher --binary ./fk-module-dummy.bin --port /dev/ttyACM1
+popd
+
+echo
+echo
+echo
+
+sleep 1
+sudo -E ~/tools/bin/flasher --port /dev/ttyACM0 --tail --tail-inactivity 3 | sed "s/^/slave  | /"&
+S=$!
+
+sleep 1
+sudo -E ~/tools/bin/flasher --port /dev/ttyACM1 --tail --tail-inactivity 3 | sed "s/^/master | /" &
+M=$!
+
+wait $S
+wait $M
+

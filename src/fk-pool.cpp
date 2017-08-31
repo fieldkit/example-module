@@ -22,13 +22,14 @@ bool fk_pool_create(fk_pool_t **pool, size_t size) {
 
 bool fk_pool_free(fk_pool_t *pool) {
     free((void *)pool);
-
+    // debugfln("  pfree: 0x%x", pool);
     return true;
 }
 
 void fk_pool_empty(fk_pool_t *pool) {
     pool->ptr = pool->block;
     pool->remaining = pool->size;
+    // debugfln(" pempty: 0x%x", pool);
 }
 
 void *fk_pool_malloc(fk_pool_t *pool, size_t size) {
@@ -36,9 +37,7 @@ void *fk_pool_malloc(fk_pool_t *pool, size_t size) {
     uint8_t *p = pool->ptr;
     pool->ptr += aligned;
     pool->remaining -= aligned;
-
     // debugfln(" palloc: 0x%x %d %d (0x%x %d)", pool, size, aligned, p, p - pool->block);
-
     return (void *)p;
 }
 

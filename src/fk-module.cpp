@@ -12,11 +12,11 @@ static void receive_callback(int bytes);
 static bool fk_pb_encode_string(pb_ostream_t *stream, const pb_field_t *field, void * const *arg);
 static bool fk_pb_decode_string(pb_istream_t *stream, const pb_field_t *field, void **arg);
 
-static fk_serialized_message_t *fk_serialize_message(const pb_field_t fields[], const void *src, fk_pool_t *fkp);
+static fk_serialized_message_t *fk_serialize_message(const pb_field_t *fields, const void *src, fk_pool_t *fkp);
 
 static uint8_t i2c_device_send_block(uint8_t address, const void *ptr, size_t size);
-static uint8_t i2c_device_send_message(uint8_t address, const pb_field_t fields[], const void *src);
-static uint8_t i2c_device_receive(uint8_t address, const pb_field_t fields[], void *src, fk_pool_t *fkp);
+static uint8_t i2c_device_send_message(uint8_t address, const pb_field_t *fields, const void *src);
+static uint8_t i2c_device_receive(uint8_t address, const pb_field_t *fields, void *src, fk_pool_t *fkp);
 
 void fk_module_start(fk_module_t *fkm) {
     if (active_fkm != nullptr) {
@@ -76,17 +76,17 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
 
             uint8_t status = i2c_device_receive(i, fk_module_WireMessageReply_fields, &replyMessage, fkp);
             if (status == WIRE_SEND_SUCCESS) {
+                debugfln("i2c[%d]: found slave type=%d version=%d type=%d name=%s", i,
+                         replyMessage.type, replyMessage.capabilities.version,
+                         replyMessage.capabilities.type,
+                         replyMessage.capabilities.name.arg);
+
                 fk_device_t *n = (fk_device_t *)fk_pool_malloc(fkp, sizeof(fk_device_t));
                 n->address = i;
 
                 memcpy(&n->capabilities, &replyMessage.capabilities, sizeof(fk_module_Capabilities));
 
                 APR_RING_INSERT_TAIL(devices, n, fk_device_t, link);
-
-                debugfln("i2c[%d]: found slave type=%d version=%d type=%d name=%s", i,
-                         replyMessage.type, replyMessage.capabilities.version,
-                         replyMessage.capabilities.type,
-                         replyMessage.capabilities.name.arg);
             }
             else {
                 debugfln("i2c[%d]: bad handshake", i);
@@ -120,9 +120,8 @@ bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp) {
 static void request_callback() {
     fk_serialized_message_t *sm = nullptr;
 
-    debugfln("i2c: replying...");
-
     for (sm = APR_RING_FIRST(&active_fkm->messages); sm != APR_RING_SENTINEL(&active_fkm->messages, fk_serialized_message_t, link); sm = APR_RING_NEXT(sm, link)) {
+        debugfln("i2c: replying...");
         if (i2c_device_send_block(0, sm->ptr, sm->length) != 0) {
             debugfln("i2c: error replying");
         }
@@ -163,7 +162,30 @@ static void receive_callback(int bytes) {
         replyMessage.capabilities.name.arg = (void *)active_fkm->name;
 
         fk_serialized_message_t *sm = fk_serialize_message(fk_module_WireMessageReply_fields, &replyMessage, active_fkm->fkp);
+        APR_RING_INSERT_TAIL(&active_fkm->messages, sm, fk_serialized_message_t, link);
 
+        break;
+    }
+    case fk_module_QueryType_QUERY_BEGIN_TAKE_READINGS: {
+        debugfln("i2c: begin take readings");
+
+        fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
+        replyMessage.type = fk_module_ReplyType_REPLY_READING_STATUS;
+        replyMessage.readingStatus.state = fk_module_ReadingState_IDLE;
+
+        fk_serialized_message_t *sm = fk_serialize_message(fk_module_WireMessageReply_fields, &replyMessage, active_fkm->fkp);
+        APR_RING_INSERT_TAIL(&active_fkm->messages, sm, fk_serialized_message_t, link);
+
+        break;
+    }
+    case fk_module_QueryType_QUERY_READING_STATUS: {
+        debugfln("i2c: reading status");
+
+        fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
+        replyMessage.type = fk_module_ReplyType_REPLY_READING_STATUS;
+        replyMessage.readingStatus.state = fk_module_ReadingState_BUSY;
+
+        fk_serialized_message_t *sm = fk_serialize_message(fk_module_WireMessageReply_fields, &replyMessage, active_fkm->fkp);
         APR_RING_INSERT_TAIL(&active_fkm->messages, sm, fk_serialized_message_t, link);
 
         break;
@@ -175,16 +197,18 @@ static void receive_callback(int bytes) {
     }
 }
 
-static fk_serialized_message_t *fk_serialize_message(const pb_field_t fields[], const void *src, fk_pool_t *fkp) {
+static fk_serialized_message_t *fk_serialize_message(const pb_field_t *fields, const void *src, fk_pool_t *fkp) {
     uint8_t buffer[FK_MODULE_PROTOCOL_MAX_MESSAGE];
     pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
     bool status = pb_encode_delimited(&stream, fields, src);
     if (!status) {
         return nullptr;
     }
-    fk_serialized_message_t *sm = (fk_serialized_message_t *)fk_pool_malloc(fkp, sizeof(fk_serialized_message_t));
+    fk_serialized_message_t *sm = (fk_serialized_message_t *)fk_pool_malloc(fkp, sizeof(fk_serialized_message_t) + stream.bytes_written);
+    uint8_t *ptr = (uint8_t *)(sm + 1);
     sm->length = stream.bytes_written;
-    sm->ptr = buffer;
+    sm->ptr = ptr;
+    memcpy(ptr, buffer, stream.bytes_written);
     return sm;
 }
 
@@ -200,7 +224,7 @@ static uint8_t i2c_device_send_block(uint8_t address, const void *ptr, size_t si
     }
 }
 
-static uint8_t i2c_device_send_message(uint8_t address, const pb_field_t fields[], const void *src) {
+static uint8_t i2c_device_send_message(uint8_t address, const pb_field_t *fields, const void *src) {
     uint8_t buffer[FK_MODULE_PROTOCOL_MAX_MESSAGE];
     pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
     bool status = pb_encode_delimited(&stream, fields, src);
@@ -208,7 +232,7 @@ static uint8_t i2c_device_send_message(uint8_t address, const pb_field_t fields[
     return i2c_device_send_block(address, buffer, size);
 }
 
-static uint8_t i2c_device_receive(uint8_t address, const pb_field_t fields[], void *src, fk_pool_t *fkp) {
+static uint8_t i2c_device_receive(uint8_t address, const pb_field_t *fields, void *src, fk_pool_t *fkp) {
     size_t bytes = 0;
     uint8_t buffer[FK_MODULE_PROTOCOL_MAX_MESSAGE];
 

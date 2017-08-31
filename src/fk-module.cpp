@@ -68,7 +68,7 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
 
     for (uint8_t i = 1; i < 128; ++i) {
         if (i2c_device_send_message(i, fk_module_WireMessageQuery_fields, &wireMessage) == WIRE_SEND_SUCCESS) {
-            debugf("i2c[%d]: query caps...\r\n", i);
+            debugfln("i2c[%d]: query caps...", i);
 
             fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
             replyMessage.capabilities.name.funcs.decode = fk_pb_decode_string;
@@ -78,6 +78,8 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
             if (status == WIRE_SEND_SUCCESS) {
                 fk_device_t *n = (fk_device_t *)fk_pool_malloc(fkp, sizeof(fk_device_t));
                 n->address = i;
+
+                memcpy(&n->capabilities, &replyMessage.capabilities, sizeof(fk_module_Capabilities));
 
                 APR_RING_INSERT_TAIL(devices, n, fk_device_t, link);
 
@@ -97,6 +99,9 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
 
 static void request_callback() {
     fk_serialized_message_t *sm = nullptr;
+
+    debugfln("i2c: replying...");
+
     for (sm = APR_RING_FIRST(&active_fkm->messages); sm != APR_RING_SENTINEL(&active_fkm->messages, fk_serialized_message_t, link); sm = APR_RING_NEXT(sm, link)) {
         if (i2c_device_send_block(0, sm->ptr, sm->length) != 0) {
             debugfln("i2c: error replying");
@@ -128,7 +133,7 @@ static void receive_callback(int bytes) {
 
     switch (wireMessage.type) {
     case fk_module_QueryType_QUERY_CAPABILITIES: {
-        debugfln("i2c: caps reply");
+        debugfln("i2c: capabilities");
 
         fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
         replyMessage.type = fk_module_ReplyType_REPLY_CAPABILITIES;
@@ -154,6 +159,9 @@ static fk_serialized_message_t *fk_serialize_message(const pb_field_t fields[], 
     uint8_t buffer[FK_MODULE_PROTOCOL_MAX_MESSAGE];
     pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
     bool status = pb_encode_delimited(&stream, fields, src);
+    if (!status) {
+        return nullptr;
+    }
     fk_serialized_message_t *sm = (fk_serialized_message_t *)fk_pool_malloc(fkp, sizeof(fk_serialized_message_t));
     sm->length = stream.bytes_written;
     sm->ptr = buffer;

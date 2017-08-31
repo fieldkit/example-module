@@ -33,6 +33,7 @@ const uint8_t WIRE_SEND_OTHER = 4;
 
 typedef struct fk_device_t {
     uint8_t address;
+    fk_module_Capabilities capabilities;
     APR_RING_ENTRY(fk_device_t) link;
 } fk_device_t;
 

@@ -15,6 +15,8 @@ bool fk_pool_create(fk_pool_t **pool, size_t size);
 
 bool fk_pool_free(fk_pool_t *pool);
 
+void fk_pool_empty(fk_pool_t *pool);
+
 void *fk_pool_malloc(fk_pool_t *pool, size_t size);
 
 char *fk_pool_strdup(fk_pool_t *pool, const char *str);

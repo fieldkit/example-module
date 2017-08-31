@@ -26,6 +26,11 @@ bool fk_pool_free(fk_pool_t *pool) {
     return true;
 }
 
+void fk_pool_empty(fk_pool_t *pool) {
+    pool->ptr = pool->block;
+    pool->remaining = pool->size;
+}
+
 void *fk_pool_malloc(fk_pool_t *pool, size_t size) {
     size_t aligned = size + (4 - (size % 4));
     uint8_t *p = pool->ptr;

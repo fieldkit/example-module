@@ -97,6 +97,26 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
     return devices;
 }
 
+bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp) {
+    debugfln("i2c[%d]: taking reading", device->address);
+
+    fk_module_WireMessageQuery queryMessage = fk_module_WireMessageQuery_init_default;
+    queryMessage.type = fk_module_QueryType_QUERY_BEGIN_TAKE_READINGS;
+    queryMessage.beginTakeReadings.index = 0;
+    if (i2c_device_send_message(device->address, fk_module_WireMessageQuery_fields, &queryMessage) != WIRE_SEND_SUCCESS) {
+        return false;
+    }
+
+
+    fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
+    uint8_t status = i2c_device_receive(device->address, fk_module_WireMessageReply_fields, &replyMessage, fkp);
+    if (!status) {
+        return false;
+    }
+
+    return true;
+}
+
 static void request_callback() {
     fk_serialized_message_t *sm = nullptr;
 

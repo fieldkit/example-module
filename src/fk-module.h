@@ -45,4 +45,6 @@ bool fk_devices_exists(fk_device_ring_t *devices, uint8_t address);
 
 fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp);
 
+bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp);
+
 #endif

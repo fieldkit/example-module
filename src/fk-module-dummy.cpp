@@ -10,7 +10,10 @@
 
 fk_module_t module = {
     8,
-    "iNaturalist"
+    "iNaturalist",
+    nullptr,
+    nullptr,
+    nullptr
 };
 
 void blink(uint8_t pin, uint8_t times) {

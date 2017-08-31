@@ -6,10 +6,21 @@
 
 #include <fk-module-protocol.h>
 #include "fk-pool.h"
+#include "apr_ring.h"
+
+typedef struct fk_serialized_message_t {
+    const void *ptr;
+    size_t length;
+    APR_RING_ENTRY(fk_serialized_message_t) link;
+} fk_serialized_message_t;
+
+APR_RING_HEAD(fk_serialized_message_ring_t, fk_serialized_message_t);
 
 typedef struct fk_module_t {
     uint8_t address;
     const char *name;
+    fk_pool_t *fkp;
+    fk_serialized_message_ring_t messages;
 } fk_module_t;
 
 void fk_module_start(fk_module_t *fkm);

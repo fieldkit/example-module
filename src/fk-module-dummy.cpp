@@ -37,8 +37,8 @@ void setup() {
     fk_pool_t *fkp = nullptr;
     fk_pool_create(&fkp, 256);
 
-    i2c_device_t *devices = i2c_devices_scan(fkp);
-    bool master = i2c_devices_exists(devices, 8);
+    fk_device_ring_t *devices = fk_devices_scan(fkp);
+    bool master = fk_devices_exists(devices, 8);
     fk_pool_free(fkp);
 
     if (master) {

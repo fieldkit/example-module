@@ -6,11 +6,11 @@
 
 static fk_module_t *active_fkm = nullptr;
 
-static void onRequest();
-static void onReceive(int bytes);
+static void request_callback();
+static void receive_callback(int bytes);
 
-static bool fk_encode_string(pb_ostream_t *stream, const pb_field_t *field, void * const *arg);
-static bool fk_decode_string(pb_istream_t *stream, const pb_field_t *field, void **arg);
+static bool fk_pb_encode_string(pb_ostream_t *stream, const pb_field_t *field, void * const *arg);
+static bool fk_pb_decode_string(pb_istream_t *stream, const pb_field_t *field, void **arg);
 
 static fk_serialized_message_t *fk_serialize_message(const pb_field_t fields[], const void *src, fk_pool_t *fkp);
 
@@ -32,33 +32,31 @@ void fk_module_start(fk_module_t *fkm) {
     APR_RING_INIT(&active_fkm->messages, fk_serialized_message_t, link);
 
     Wire.begin(fkm->address);
-    Wire.onReceive(onReceive);
-    Wire.onRequest(onRequest);
+    Wire.onReceive(receive_callback);
+    Wire.onRequest(request_callback);
 }
 
-size_t i2c_devices_number(i2c_device_t *devices) {
+size_t fk_devices_number(fk_device_ring_t *devices) {
     size_t number = 0;
-    while (devices != nullptr) {
+    for (fk_device_t *d = APR_RING_FIRST(devices); d != APR_RING_SENTINEL(devices, fk_device_t, link); d = APR_RING_NEXT(d, link)) {
         number++;
-        devices = devices->next;
     }
     return number;
 }
 
-bool i2c_devices_exists(i2c_device_t *head, uint8_t address) {
-    size_t number = 0;
-    while (head != nullptr) {
-        if (head->address == address) {
+bool fk_devices_exists(fk_device_ring_t *devices, uint8_t address) {
+    for (fk_device_t *d = APR_RING_FIRST(devices); d != APR_RING_SENTINEL(devices, fk_device_t, link); d = APR_RING_NEXT(d, link)) {
+        if (d->address == address) {
             return true;
         }
-        head = head->next;
     }
     return false;
 }
 
-i2c_device_t *i2c_devices_scan(fk_pool_t *fkp) {
-    i2c_device_t *head = nullptr;
-    i2c_device_t *tail = nullptr;
+fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
+    fk_device_ring_t *devices = (fk_device_ring_t *)fk_pool_malloc(fkp, sizeof(fk_device_ring_t));
+
+    APR_RING_INIT(devices, fk_device_t, link);
 
     debugfln("i2c: scanning...");
 
@@ -73,21 +71,15 @@ i2c_device_t *i2c_devices_scan(fk_pool_t *fkp) {
             debugf("i2c[%d]: query caps...\r\n", i);
 
             fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
-            replyMessage.capabilities.name.funcs.decode = fk_decode_string;
+            replyMessage.capabilities.name.funcs.decode = fk_pb_decode_string;
             replyMessage.capabilities.name.arg = fkp;
 
             uint8_t status = i2c_device_receive(i, fk_module_WireMessageReply_fields, &replyMessage, fkp);
             if (status == WIRE_SEND_SUCCESS) {
-                i2c_device_t *n = (i2c_device_t *)fk_pool_malloc(fkp, sizeof(i2c_device_t));
+                fk_device_t *n = (fk_device_t *)fk_pool_malloc(fkp, sizeof(fk_device_t));
                 n->address = i;
-                n->next = nullptr;
-                if (head == nullptr) {
-                    head = n;
-                    tail = n;
-                }
-                else {
-                    tail->next = n;
-                }
+
+                APR_RING_INSERT_TAIL(devices, n, fk_device_t, link);
 
                 debugfln("i2c[%d]: found slave type=%d version=%d type=%d name=%s", i,
                          replyMessage.type, replyMessage.capabilities.version,
@@ -100,10 +92,10 @@ i2c_device_t *i2c_devices_scan(fk_pool_t *fkp) {
         }
     }
 
-    return head;
+    return devices;
 }
 
-static void onRequest() {
+static void request_callback() {
     fk_serialized_message_t *sm = nullptr;
     for (sm = APR_RING_FIRST(&active_fkm->messages); sm != APR_RING_SENTINEL(&active_fkm->messages, fk_serialized_message_t, link); sm = APR_RING_NEXT(sm, link)) {
         if (i2c_device_send_block(0, sm->ptr, sm->length) != 0) {
@@ -115,7 +107,7 @@ static void onRequest() {
     fk_pool_empty(active_fkm->fkp);
 }
 
-static void onReceive(int bytes) {
+static void receive_callback(int bytes) {
     if (bytes == 0) {
         return;
     }
@@ -142,7 +134,7 @@ static void onReceive(int bytes) {
         replyMessage.type = fk_module_ReplyType_REPLY_CAPABILITIES;
         replyMessage.capabilities.version = FK_MODULE_PROTOCOL_VERSION;
         replyMessage.capabilities.type = fk_module_ModuleType_SENSOR;
-        replyMessage.capabilities.name.funcs.encode = fk_encode_string;
+        replyMessage.capabilities.name.funcs.encode = fk_pb_encode_string;
         replyMessage.capabilities.name.arg = (void *)active_fkm->name;
 
         fk_serialized_message_t *sm = fk_serialize_message(fk_module_WireMessageReply_fields, &replyMessage, active_fkm->fkp);
@@ -165,7 +157,6 @@ static fk_serialized_message_t *fk_serialize_message(const pb_field_t fields[], 
     fk_serialized_message_t *sm = (fk_serialized_message_t *)fk_pool_malloc(fkp, sizeof(fk_serialized_message_t));
     sm->length = stream.bytes_written;
     sm->ptr = buffer;
-    // sm->n = nullptr;
     return sm;
 }
 
@@ -212,7 +203,7 @@ static uint8_t i2c_device_receive(uint8_t address, const pb_field_t fields[], vo
     return WIRE_SEND_SUCCESS;
 }
 
-static bool fk_encode_string(pb_ostream_t *stream, const pb_field_t *field, void * const *arg) {
+static bool fk_pb_encode_string(pb_ostream_t *stream, const pb_field_t *field, void * const *arg) {
     if (!pb_encode_tag_for_field(stream, field))
         return false;
 
@@ -220,7 +211,7 @@ static bool fk_encode_string(pb_ostream_t *stream, const pb_field_t *field, void
     return pb_encode_string(stream, (uint8_t *)str, strlen(str));
 }
 
-static bool fk_decode_string(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+static bool fk_pb_decode_string(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     fk_pool_t *fkp = (fk_pool_t *)(*arg);
     size_t len = stream->bytes_left;
 

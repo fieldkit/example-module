@@ -31,15 +31,17 @@ const uint8_t WIRE_SEND_RECEIVE_NACK_ADDRESS = 2;
 const uint8_t WIRE_SEND_RECEIVE_NACK_DATA = 3;
 const uint8_t WIRE_SEND_OTHER = 4;
 
-typedef struct i2c_device_t {
+typedef struct fk_device_t {
     uint8_t address;
-    i2c_device_t *next;
-} i2c_device_t;
+    APR_RING_ENTRY(fk_device_t) link;
+} fk_device_t;
 
-size_t i2c_devices_number(i2c_device_t *devices);
+APR_RING_HEAD(fk_device_ring_t, fk_device_t);
 
-bool i2c_devices_exists(i2c_device_t *head, uint8_t address);
+size_t fk_devices_number(fk_device_ring_t *devices);
 
-i2c_device_t *i2c_devices_scan(fk_pool_t *fkp);
+bool fk_devices_exists(fk_device_ring_t *devices, uint8_t address);
+
+fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp);
 
 #endif

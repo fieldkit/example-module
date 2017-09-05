@@ -21,4 +21,6 @@ void *fk_pool_malloc(fk_pool_t *pool, size_t size);
 
 char *fk_pool_strdup(fk_pool_t *pool, const char *str);
 
+size_t fk_pool_used(fk_pool_t *pool);
+
 #endif

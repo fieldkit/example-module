@@ -48,3 +48,7 @@ char *fk_pool_strdup(fk_pool_t *pool, const char *str) {
     p[len] = 0;
     return p;
 }
+
+size_t fk_pool_used(fk_pool_t *pool) {
+    return pool->size - pool->remaining;
+}

@@ -6,31 +6,30 @@
 
 static fk_module_t *active_fkm = nullptr;
 
-static void request_callback();
-static void receive_callback(int bytes);
-
+static void module_request_callback();
+static void module_receive_callback(int bytes);
 static void module_reply(fk_serialized_message_t *sm, fk_module_t *fkm);
 
-void fk_module_start(fk_module_t *fkm) {
+bool fk_module_start(fk_module_t *fkm, fk_pool_t *pool) {
     if (active_fkm != nullptr) {
-        // TODO: Error, warn.
+        return false;
     }
 
     fkm->state = fk_module_state_t::START;
 
-    if (!fk_pool_create(&fkm->reply_pool, 256)) {
-        // TODO: Error, warng.
+    if (!fk_pool_create(&fkm->reply_pool, 256, pool)) {
+        return false;
     }
 
-    if (!fk_pool_create(&fkm->readings_pool, 256)) {
-        // TODO: Error, warng.
+    if (!fk_pool_create(&fkm->readings_pool, 256, pool)) {
+        return false;
     }
 
     APR_RING_INIT(&fkm->messages, fk_serialized_message_t, link);
 
     Wire.begin(fkm->address);
-    Wire.onReceive(receive_callback);
-    Wire.onRequest(request_callback);
+    Wire.onReceive(module_receive_callback);
+    Wire.onRequest(module_request_callback);
 
     active_fkm = fkm;
 }
@@ -73,7 +72,7 @@ void fk_module_done_reading(fk_module_t *fkm, fk_module_readings_t *readings) {
     fkm->state = fk_module_state_t::DONE_READING;
 }
 
-static void request_callback() {
+static void module_request_callback() {
     fk_module_t *fkm = active_fkm;
 
     if (APR_RING_EMPTY(&fkm->messages, fk_serialized_message_t, link)) {
@@ -104,7 +103,7 @@ static void request_callback() {
     }
 }
 
-static void receive_callback(int bytes) {
+static void module_receive_callback(int bytes) {
     if (bytes > 0) {
         uint8_t buffer[FK_MODULE_PROTOCOL_MAX_MESSAGE];
         size_t size = bytes;

@@ -34,7 +34,7 @@ struct fk_module_t {
     fk_serialized_message_ring_t messages;
 };
 
-void fk_module_start(fk_module_t *fkm);
+bool fk_module_start(fk_module_t *fkm, fk_pool_t *pool);
 
 void fk_module_tick(fk_module_t *fkm);
 

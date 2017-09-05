@@ -44,21 +44,22 @@ void setup() {
     debugfln("dummy: ready, checking (free = %d)...", fk_free_memory());
 
     fk_pool_t *fkp = nullptr;
-    fk_pool_create(&fkp, 256);
+    fk_pool_create(&fkp, 256, nullptr);
 
     fk_device_ring_t *devices = fk_devices_scan(fkp);
     bool master = fk_devices_exists(devices, 8);
 
     if (master) {
         fk_pool_t *reading_pool = nullptr;
-        fk_pool_create(&reading_pool, 256);
+        fk_pool_create(&reading_pool, 256, nullptr);
 
         debugfln("dummy: acting as master");
 
         delay(1000);
 
         while (true) {
-            for (fk_device_t *d = APR_RING_FIRST(devices); d != APR_RING_SENTINEL(devices, fk_device_t, link); d = APR_RING_NEXT(d, link)) {
+            fk_device_t *d = nullptr;
+            APR_RING_FOREACH(d, devices, fk_device_t, link) {
                 if (!fk_devices_begin_take_reading(d, reading_pool)) {
                     debugfln("dummy: error beginning take readings");
                 }
@@ -66,7 +67,7 @@ void setup() {
 
             while (true) {
                 bool done = false;
-                for (fk_device_t *d = APR_RING_FIRST(devices); d != APR_RING_SENTINEL(devices, fk_device_t, link); d = APR_RING_NEXT(d, link)) {
+                APR_RING_FOREACH(d, devices, fk_device_t, link) {
                     fk_module_readings_t *readings = nullptr;
 
                     if (!fk_devices_reading_status(d, &readings, reading_pool)) {
@@ -86,10 +87,10 @@ void setup() {
                     break;
                 }
 
-                delay(5000);
+                delay(250);
             }
 
-            delay(1000);
+            delay(5000);
         }
     }
     else {
@@ -105,7 +106,10 @@ void setup() {
             nullptr
         };
 
-        fk_module_start(&module);
+        if (!fk_module_start(&module, nullptr)) {
+            debugfln("dummy: error creating module");
+            return;
+        }
 
         while (true) {
             fk_module_tick(&module);

@@ -77,7 +77,14 @@ void setup() {
                     }
 
                     if (readings != nullptr) {
+                        fk_module_reading_t *r = nullptr;
+
+                        APR_RING_FOREACH(r, readings, fk_module_reading_t, link) {
+                            debugfln("dummy: reading %d '%f'", r->time, r->value);
+                        }
+
                         debugfln("dummy: done, (free = %d)", fk_free_memory());
+
                         done = true;
                     }
                 }

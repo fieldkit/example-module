@@ -80,10 +80,8 @@ bool fk_devices_reading_status(fk_device_t *device, fk_module_readings_t **readi
 
     switch (reply_message.readingStatus.state) {
     case fk_module_ReadingState_DONE : {
-        (*readings) = (fk_module_readings_t *)fk_pool_malloc(fkp, sizeof(fk_module_readings_t));
-
-        debugfln("fk[%d]: data %d", device->address, fk_pool_used(fkp));
-
+        fk_pb_reader_t *reader = (fk_pb_reader_t *)reply_message.sensorReadings.readings.arg;
+        (*readings) = reader->readings;
         break;
     }
     case fk_module_ReadingState_IDLE: {

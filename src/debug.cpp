@@ -21,3 +21,9 @@ void debugfln(char *fmt = "", ...) {
     Serial.print(buf);
     Serial.println();
 }
+
+void __fk_assert(const char *msg, const char *file, int lineno) {
+    debugfln("ASSERTION: %s:%d '%s'", file, lineno, msg);
+    Serial.flush();
+    abort();
+}

@@ -5,7 +5,7 @@
 #include "debug.h"
 #include "fk-pool.h"
 
-#define POOL_DEBUG(f, ...)
+#define POOL_DEBUG(f, ...)  // debugfln(f, __VA_ARGS__)
 
 bool fk_pool_create(fk_pool_t **pool, size_t size) {
     fk_pool_t *fkp = nullptr;
@@ -27,6 +27,9 @@ bool fk_pool_create(fk_pool_t **pool, size_t size) {
 bool fk_pool_free(fk_pool_t *pool) {
     fk_assert(pool != nullptr);
 
+    pool->size = 0;
+    pool->remaining = 0;
+
     free((void *)pool);
 
     POOL_DEBUG("  pfree: 0x%x", pool);
@@ -47,6 +50,7 @@ void *fk_pool_malloc(fk_pool_t *pool, size_t size) {
     size_t aligned = size + (4 - (size % 4));
 
     fk_assert(pool != nullptr);
+    fk_assert(pool->size >= aligned);
     fk_assert(pool->remaining >= aligned);
 
     uint8_t *p = pool->ptr;
@@ -60,5 +64,6 @@ void *fk_pool_malloc(fk_pool_t *pool, size_t size) {
 
 size_t fk_pool_used(fk_pool_t *pool) {
     fk_assert(pool != nullptr);
+
     return pool->size - pool->remaining;
 }

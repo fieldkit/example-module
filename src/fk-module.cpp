@@ -9,7 +9,7 @@ static fk_module_t *active_fkm = nullptr;
 static void request_callback();
 static void receive_callback(int bytes);
 
-static void fk_module_tick_reply(fk_serialized_message_t *sm, fk_module_t *fkm);
+static void module_reply(fk_serialized_message_t *sm, fk_module_t *fkm);
 
 void fk_module_start(fk_module_t *fkm) {
     if (active_fkm != nullptr) {
@@ -62,8 +62,7 @@ void fk_module_tick(fk_module_t *fkm) {
     }
 
     if (fkm->pending != nullptr) {
-        debugfln("fk: handling incoming...");
-        fk_module_tick_reply(fkm->pending, fkm);
+        module_reply(fkm->pending, fkm);
         fkm->pending = nullptr;
     }
 }
@@ -80,18 +79,19 @@ static void request_callback() {
     if (APR_RING_EMPTY(&fkm->messages, fk_serialized_message_t, link)) {
         debugfln("fk: retry reply");
 
-        fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
-        replyMessage.type = fk_module_ReplyType_REPLY_RETRY;
+        fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
+        reply_message.type = fk_module_ReplyType_REPLY_RETRY;
 
-        uint8_t status = fk_i2c_device_send_message(0, fk_module_WireMessageReply_fields, &replyMessage);
+        uint8_t status = fk_i2c_device_send_message(0, fk_module_WireMessageReply_fields, &reply_message);
         if (status != WIRE_SEND_SUCCESS) {
             debugfln("fk: error %d", status);
         }
     }
     else {
-        debugfln("fk: replying");
+        debugfln("fk: real reply");
 
-        for (fk_serialized_message_t *sm = APR_RING_FIRST(&fkm->messages); sm != APR_RING_SENTINEL(&fkm->messages, fk_serialized_message_t, link); sm = APR_RING_NEXT(sm, link)) {
+        fk_serialized_message_t *sm = nullptr;
+        APR_RING_FOREACH(sm, &fkm->messages, fk_serialized_message_t, link) {
             uint8_t status = fk_i2c_device_send_block(0, sm->ptr, sm->length);
             if (status != WIRE_SEND_SUCCESS) {
                 debugfln("fk: error %d", status);
@@ -117,29 +117,29 @@ static void receive_callback(int bytes) {
     }
 }
 
-static void fk_module_tick_reply(fk_serialized_message_t *incoming, fk_module_t *fkm) {
-    fk_module_WireMessageQuery wireMessage = fk_module_WireMessageQuery_init_zero;
+static void module_reply(fk_serialized_message_t *incoming, fk_module_t *fkm) {
+    fk_module_WireMessageQuery wire_message = fk_module_WireMessageQuery_init_zero;
     pb_istream_t stream = pb_istream_from_buffer((uint8_t *)incoming->ptr, incoming->length);
-    bool status = pb_decode_delimited(&stream, fk_module_WireMessageQuery_fields, &wireMessage);
+    bool status = pb_decode_delimited(&stream, fk_module_WireMessageQuery_fields, &wire_message);
     if (!status) {
         debugfln("fk: malformed message");
         return;
     }
 
-    switch (wireMessage.type) {
+    switch (wire_message.type) {
     case fk_module_QueryType_QUERY_CAPABILITIES: {
         debugfln("fk: capabilities");
 
-        fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
-        replyMessage.type = fk_module_ReplyType_REPLY_CAPABILITIES;
-        replyMessage.error.message.funcs.encode = fk_pb_encode_string;
-        replyMessage.error.message.arg = nullptr;
-        replyMessage.capabilities.version = FK_MODULE_PROTOCOL_VERSION;
-        replyMessage.capabilities.type = fk_module_ModuleType_SENSOR;
-        replyMessage.capabilities.name.funcs.encode = fk_pb_encode_string;
-        replyMessage.capabilities.name.arg = (void *)fkm->name;
+        fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
+        reply_message.type = fk_module_ReplyType_REPLY_CAPABILITIES;
+        reply_message.error.message.funcs.encode = fk_pb_encode_string;
+        reply_message.error.message.arg = nullptr;
+        reply_message.capabilities.version = FK_MODULE_PROTOCOL_VERSION;
+        reply_message.capabilities.type = fk_module_ModuleType_SENSOR;
+        reply_message.capabilities.name.funcs.encode = fk_pb_encode_string;
+        reply_message.capabilities.name.arg = (void *)fkm->name;
 
-        fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &replyMessage, fkm->reply_pool);
+        fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
         if (sm == nullptr) {
             debugfln("fk: error serializing reply");
             return;
@@ -151,15 +151,15 @@ static void fk_module_tick_reply(fk_serialized_message_t *incoming, fk_module_t 
     case fk_module_QueryType_QUERY_BEGIN_TAKE_READINGS: {
         debugfln("fk: begin take readings");
 
-        fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
-        replyMessage.type = fk_module_ReplyType_REPLY_READING_STATUS;
-        replyMessage.error.message.funcs.encode = fk_pb_encode_string;
-        replyMessage.error.message.arg = nullptr;
-        replyMessage.readingStatus.state = fk_module_ReadingState_BEGIN;
-        replyMessage.capabilities.name.funcs.encode = fk_pb_encode_string;
-        replyMessage.capabilities.name.arg = (void *)fkm->name;
+        fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
+        reply_message.type = fk_module_ReplyType_REPLY_READING_STATUS;
+        reply_message.error.message.funcs.encode = fk_pb_encode_string;
+        reply_message.error.message.arg = nullptr;
+        reply_message.readingStatus.state = fk_module_ReadingState_BEGIN;
+        reply_message.capabilities.name.funcs.encode = fk_pb_encode_string;
+        reply_message.capabilities.name.arg = (void *)fkm->name;
 
-        fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &replyMessage, fkm->reply_pool);
+        fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
         if (sm == nullptr) {
             debugfln("fk: error serializing reply");
             return;
@@ -173,32 +173,32 @@ static void fk_module_tick_reply(fk_serialized_message_t *incoming, fk_module_t 
     case fk_module_QueryType_QUERY_READING_STATUS: {
         debugfln("fk: reading status");
 
-        fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
-        replyMessage.type = fk_module_ReplyType_REPLY_READING_STATUS;
-        replyMessage.error.message.funcs.encode = fk_pb_encode_string;
-        replyMessage.error.message.arg = nullptr;
-        replyMessage.capabilities.name.funcs.encode = fk_pb_encode_string;
-        replyMessage.capabilities.name.arg = (void *)fkm->name;
-        replyMessage.readingStatus.state = fk_module_ReadingState_IDLE;
+        fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
+        reply_message.type = fk_module_ReplyType_REPLY_READING_STATUS;
+        reply_message.error.message.funcs.encode = fk_pb_encode_string;
+        reply_message.error.message.arg = nullptr;
+        reply_message.capabilities.name.funcs.encode = fk_pb_encode_string;
+        reply_message.capabilities.name.arg = (void *)fkm->name;
+        reply_message.readingStatus.state = fk_module_ReadingState_IDLE;
 
         bool free_readings_pool = false;
 
         switch (fkm->state) {
         case fk_module_state_t::DONE_READING: {
             fkm->state = fk_module_state_t::IDLE;
-            replyMessage.readingStatus.state = fk_module_ReadingState_DONE;
-            replyMessage.sensorReadings.readings.funcs.encode = fk_pb_encode_readings;
-            replyMessage.sensorReadings.readings.arg = fkm->readings;
+            reply_message.readingStatus.state = fk_module_ReadingState_DONE;
+            reply_message.sensorReadings.readings.funcs.encode = fk_pb_encode_readings;
+            reply_message.sensorReadings.readings.arg = fkm->readings;
             free_readings_pool = true;
             break;
         }
         case fk_module_state_t::BUSY: {
-            replyMessage.readingStatus.state = fk_module_ReadingState_BUSY;
+            reply_message.readingStatus.state = fk_module_ReadingState_BUSY;
             break;
         }
         }
 
-        fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &replyMessage, fkm->reply_pool);
+        fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
         if (sm == nullptr) {
             debugfln("fk: error serializing reply");
             return;

@@ -24,6 +24,13 @@ void debugfln(char *fmt = "", ...) {
     Serial.println();
 }
 
+extern "C" char *sbrk(int32_t i);
+
+uint32_t fk_free_memory() {
+    char stack_dummy = 0;
+    return &stack_dummy - sbrk(0);
+}
+
 void __fk_assert(const char *msg, const char *file, int lineno) {
     debugfln("ASSERTION: %s:%d '%s'", file, lineno, msg);
     Serial.flush();

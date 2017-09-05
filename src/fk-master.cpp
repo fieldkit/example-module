@@ -20,18 +20,18 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
         if (fk_i2c_device_send_message(i, fk_module_WireMessageQuery_fields, &wireMessage) == WIRE_SEND_SUCCESS) {
             debugfln("fk[%d]: query caps...", i);
 
-            fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
-            uint8_t status = fk_i2c_device_poll(i, &replyMessage, fkp, 1000);
+            fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
+            uint8_t status = fk_i2c_device_poll(i, &reply_message, fkp, 1000);
             if (status == WIRE_SEND_SUCCESS) {
                 debugfln("fk[%d]: found slave type=%d version=%d type=%d name=%s", i,
-                         replyMessage.type, replyMessage.capabilities.version,
-                         replyMessage.capabilities.type,
-                         replyMessage.capabilities.name.arg);
+                         reply_message.type, reply_message.capabilities.version,
+                         reply_message.capabilities.type,
+                         reply_message.capabilities.name.arg);
 
                 fk_device_t *n = (fk_device_t *)fk_pool_malloc(fkp, sizeof(fk_device_t));
                 n->address = i;
 
-                memcpy(&n->capabilities, &replyMessage.capabilities, sizeof(fk_module_Capabilities));
+                memcpy(&n->capabilities, &reply_message.capabilities, sizeof(fk_module_Capabilities));
 
                 APR_RING_INSERT_TAIL(devices, n, fk_device_t, link);
             }
@@ -47,15 +47,15 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
 bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp) {
     debugfln("fk[%d]: taking reading", device->address);
 
-    fk_module_WireMessageQuery queryMessage = fk_module_WireMessageQuery_init_default;
-    queryMessage.type = fk_module_QueryType_QUERY_BEGIN_TAKE_READINGS;
-    queryMessage.beginTakeReadings.index = 0;
-    if (fk_i2c_device_send_message(device->address, fk_module_WireMessageQuery_fields, &queryMessage) != WIRE_SEND_SUCCESS) {
+    fk_module_WireMessageQuery query_message = fk_module_WireMessageQuery_init_default;
+    query_message.type = fk_module_QueryType_QUERY_BEGIN_TAKE_READINGS;
+    query_message.beginTakeReadings.index = 0;
+    if (fk_i2c_device_send_message(device->address, fk_module_WireMessageQuery_fields, &query_message) != WIRE_SEND_SUCCESS) {
         return false;
     }
 
-    fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
-    uint8_t status = fk_i2c_device_poll(device->address, &replyMessage, fkp, 1000);
+    fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
+    uint8_t status = fk_i2c_device_poll(device->address, &reply_message, fkp, 1000);
     if (status != WIRE_SEND_SUCCESS) {
         return false;
     }
@@ -66,24 +66,23 @@ bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp) {
 bool fk_devices_reading_status(fk_device_t *device, fk_module_readings_t **readings, fk_pool_t *fkp) {
     debugfln("fk[%d]: reading status", device->address);
 
-    fk_module_WireMessageQuery queryMessage = fk_module_WireMessageQuery_init_default;
-    queryMessage.type = fk_module_QueryType_QUERY_READING_STATUS;
-    if (fk_i2c_device_send_message(device->address, fk_module_WireMessageQuery_fields, &queryMessage) != WIRE_SEND_SUCCESS) {
+    fk_module_WireMessageQuery query_message = fk_module_WireMessageQuery_init_default;
+    query_message.type = fk_module_QueryType_QUERY_READING_STATUS;
+    if (fk_i2c_device_send_message(device->address, fk_module_WireMessageQuery_fields, &query_message) != WIRE_SEND_SUCCESS) {
         return false;
     }
 
-    fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
-    uint8_t status = fk_i2c_device_poll(device->address, &replyMessage, fkp, 1000);
+    fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
+    uint8_t status = fk_i2c_device_poll(device->address, &reply_message, fkp, 1000);
     if (status != WIRE_SEND_SUCCESS) {
-        debugfln("FAIL");
         return false;
     }
 
-    switch (replyMessage.readingStatus.state) {
+    switch (reply_message.readingStatus.state) {
     case fk_module_ReadingState_DONE : {
         (*readings) = (fk_module_readings_t *)fk_pool_malloc(fkp, sizeof(fk_module_readings_t));
 
-        debugfln("fk: data: %d", fk_pool_used(fkp));
+        debugfln("fk[%d]: data %d", device->address, fk_pool_used(fkp));
 
         break;
     }
@@ -95,6 +94,7 @@ bool fk_devices_reading_status(fk_device_t *device, fk_module_readings_t **readi
     }
     default: {
         (*readings) = nullptr;
+
         break;
     }
     }
@@ -104,14 +104,16 @@ bool fk_devices_reading_status(fk_device_t *device, fk_module_readings_t **readi
 
 size_t fk_devices_number(fk_device_ring_t *devices) {
     size_t number = 0;
-    for (fk_device_t *d = APR_RING_FIRST(devices); d != APR_RING_SENTINEL(devices, fk_device_t, link); d = APR_RING_NEXT(d, link)) {
+    fk_device_t *d = nullptr;
+    APR_RING_FOREACH(d, devices, fk_device_t, link) {
         number++;
     }
     return number;
 }
 
 bool fk_devices_exists(fk_device_ring_t *devices, uint8_t address) {
-    for (fk_device_t *d = APR_RING_FIRST(devices); d != APR_RING_SENTINEL(devices, fk_device_t, link); d = APR_RING_NEXT(d, link)) {
+    fk_device_t *d = nullptr;
+    APR_RING_FOREACH(d, devices, fk_device_t, link) {
         if (d->address == address) {
             return true;
         }

@@ -41,7 +41,7 @@ void setup() {
         delay(10);
     }
 
-    debugfln("dummy: ready, checking...");
+    debugfln("dummy: ready, checking (free = %d)...", fk_free_memory());
 
     fk_pool_t *fkp = nullptr;
     fk_pool_create(&fkp, 256);
@@ -50,8 +50,8 @@ void setup() {
     bool master = fk_devices_exists(devices, 8);
 
     if (master) {
-        fk_pool_t *readingPool = nullptr;
-        fk_pool_create(&readingPool, 256);
+        fk_pool_t *reading_pool = nullptr;
+        fk_pool_create(&reading_pool, 256);
 
         debugfln("dummy: acting as master");
 
@@ -59,7 +59,7 @@ void setup() {
 
         while (true) {
             for (fk_device_t *d = APR_RING_FIRST(devices); d != APR_RING_SENTINEL(devices, fk_device_t, link); d = APR_RING_NEXT(d, link)) {
-                if (!fk_devices_begin_take_reading(d, readingPool)) {
+                if (!fk_devices_begin_take_reading(d, reading_pool)) {
                     debugfln("dummy: error beginning take readings");
                 }
             }
@@ -69,26 +69,27 @@ void setup() {
                 for (fk_device_t *d = APR_RING_FIRST(devices); d != APR_RING_SENTINEL(devices, fk_device_t, link); d = APR_RING_NEXT(d, link)) {
                     fk_module_readings_t *readings = nullptr;
 
-                    if (!fk_devices_reading_status(d, &readings, readingPool)) {
+                    if (!fk_devices_reading_status(d, &readings, reading_pool)) {
                         debugfln("dummy: error getting reading status");
                         done = true;
                         break;
                     }
 
                     if (readings != nullptr) {
+                        debugfln("dummy: done, (free = %d)", fk_free_memory());
                         done = true;
                     }
                 }
 
                 if (done) {
-                    fk_pool_free(readingPool);
+                    fk_pool_empty(reading_pool);
                     break;
                 }
 
-                delay(1000);
+                delay(5000);
             }
 
-            delay(5000);
+            delay(1000);
         }
     }
     else {

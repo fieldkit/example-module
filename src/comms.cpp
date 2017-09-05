@@ -30,7 +30,7 @@ fk_serialized_message_t *fk_serialize_message_serialize(const pb_field_t *fields
     return fk_serialize_message_create(buffer, stream.bytes_written, fkp);
 }
 
-uint8_t i2c_device_send_block(uint8_t address, const void *ptr, size_t size) {
+uint8_t fk_i2c_device_send_block(uint8_t address, const void *ptr, size_t size) {
     if (address > 0) {
         Wire.beginTransmission(address);
         Wire.write((uint8_t *)ptr, size);
@@ -42,15 +42,15 @@ uint8_t i2c_device_send_block(uint8_t address, const void *ptr, size_t size) {
     }
 }
 
-uint8_t i2c_device_send_message(uint8_t address, const pb_field_t *fields, const void *src) {
+uint8_t fk_i2c_device_send_message(uint8_t address, const pb_field_t *fields, const void *src) {
     uint8_t buffer[FK_MODULE_PROTOCOL_MAX_MESSAGE];
     pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
     bool status = pb_encode_delimited(&stream, fields, src);
     size_t size = stream.bytes_written;
-    return i2c_device_send_block(address, buffer, size);
+    return fk_i2c_device_send_block(address, buffer, size);
 }
 
-uint8_t i2c_device_poll(uint8_t address, fk_module_WireMessageReply *reply, fk_pool_t *fkp, uint32_t maximum) {
+uint8_t fk_i2c_device_poll(uint8_t address, fk_module_WireMessageReply *reply, fk_pool_t *fkp, uint32_t maximum) {
     uint32_t started = millis();
 
     while (millis() - started < maximum) {
@@ -61,7 +61,7 @@ uint8_t i2c_device_poll(uint8_t address, fk_module_WireMessageReply *reply, fk_p
         reply->sensorReadings.readings.funcs.decode = fk_pb_decode_readings;
         reply->sensorReadings.readings.arg = (void *)fk_pb_reader_create(fkp);
 
-        uint8_t status = i2c_device_receive(address, fk_module_WireMessageReply_fields, reply, fkp);
+        uint8_t status = fk_i2c_device_receive(address, fk_module_WireMessageReply_fields, reply, fkp);
         if (status != WIRE_SEND_SUCCESS) {
             return status;
         }
@@ -76,7 +76,7 @@ uint8_t i2c_device_poll(uint8_t address, fk_module_WireMessageReply *reply, fk_p
     return WIRE_SEND_OTHER;
 }
 
-uint8_t i2c_device_receive(uint8_t address, const pb_field_t *fields, void *src, fk_pool_t *fkp) {
+uint8_t fk_i2c_device_receive(uint8_t address, const pb_field_t *fields, void *src, fk_pool_t *fkp) {
     size_t bytes = 0;
     uint8_t buffer[FK_MODULE_PROTOCOL_MAX_MESSAGE];
     size_t received = Wire.requestFrom(address, FK_MODULE_PROTOCOL_MAX_MESSAGE);
@@ -92,7 +92,7 @@ uint8_t i2c_device_receive(uint8_t address, const pb_field_t *fields, void *src,
 
     pb_istream_t stream = pb_istream_from_buffer(buffer, bytes);
     if (!pb_decode_delimited(&stream, fields, src)) {
-        debugfln("i2c: bad message");
+        debugfln("fk: bad message");
         return WIRE_SEND_OTHER;
     }
 

@@ -24,12 +24,12 @@ fk_serialized_message_t *fk_serialize_message_create(const void *ptr, size_t siz
 
 fk_serialized_message_t *fk_serialize_message_serialize(const pb_field_t *fields, const void *src, fk_pool_t *fkp);
 
-uint8_t i2c_device_send_block(uint8_t address, const void *ptr, size_t size);
+uint8_t fk_i2c_device_send_block(uint8_t address, const void *ptr, size_t size);
 
-uint8_t i2c_device_send_message(uint8_t address, const pb_field_t *fields, const void *src);
+uint8_t fk_i2c_device_send_message(uint8_t address, const pb_field_t *fields, const void *src);
 
-uint8_t i2c_device_receive(uint8_t address, const pb_field_t *fields, void *src, fk_pool_t *fkp);
+uint8_t fk_i2c_device_receive(uint8_t address, const pb_field_t *fields, void *src, fk_pool_t *fkp);
 
-uint8_t i2c_device_poll(uint8_t address, fk_module_WireMessageReply *src, fk_pool_t *fkp, uint32_t maximum);
+uint8_t fk_i2c_device_poll(uint8_t address, fk_module_WireMessageReply *src, fk_pool_t *fkp, uint32_t maximum);
 
 #endif

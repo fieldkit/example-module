@@ -62,14 +62,14 @@ void fk_module_tick(fk_module_t *fkm) {
     }
 
     if (fkm->pending != nullptr) {
-        debugfln("i2c: handling incoming...");
+        debugfln("fk: handling incoming...");
         fk_module_tick_reply(fkm->pending, fkm);
         fkm->pending = nullptr;
     }
 }
 
 void fk_module_done_reading(fk_module_t *fkm, fk_module_readings_t *readings) {
-    debugfln("i2c: done with reading");
+    debugfln("fk: done with reading");
     fkm->readings = readings;
     fkm->state = fk_module_state_t::DONE_READING;
 }
@@ -78,23 +78,23 @@ static void request_callback() {
     fk_module_t *fkm = active_fkm;
 
     if (APR_RING_EMPTY(&fkm->messages, fk_serialized_message_t, link)) {
-        debugfln("i2c: retry reply");
+        debugfln("fk: retry reply");
 
         fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
         replyMessage.type = fk_module_ReplyType_REPLY_RETRY;
 
-        uint8_t status = i2c_device_send_message(0, fk_module_WireMessageReply_fields, &replyMessage);
+        uint8_t status = fk_i2c_device_send_message(0, fk_module_WireMessageReply_fields, &replyMessage);
         if (status != WIRE_SEND_SUCCESS) {
-            debugfln("i2c: error %d", status);
+            debugfln("fk: error %d", status);
         }
     }
     else {
-        debugfln("i2c: replying");
+        debugfln("fk: replying");
 
         for (fk_serialized_message_t *sm = APR_RING_FIRST(&fkm->messages); sm != APR_RING_SENTINEL(&fkm->messages, fk_serialized_message_t, link); sm = APR_RING_NEXT(sm, link)) {
-            uint8_t status = i2c_device_send_block(0, sm->ptr, sm->length);
+            uint8_t status = fk_i2c_device_send_block(0, sm->ptr, sm->length);
             if (status != WIRE_SEND_SUCCESS) {
-                debugfln("i2c: error %d", status);
+                debugfln("fk: error %d", status);
             }
 
             APR_RING_UNSPLICE(sm, sm, link);
@@ -122,13 +122,13 @@ static void fk_module_tick_reply(fk_serialized_message_t *incoming, fk_module_t 
     pb_istream_t stream = pb_istream_from_buffer((uint8_t *)incoming->ptr, incoming->length);
     bool status = pb_decode_delimited(&stream, fk_module_WireMessageQuery_fields, &wireMessage);
     if (!status) {
-        debugfln("i2c: malformed message");
+        debugfln("fk: malformed message");
         return;
     }
 
     switch (wireMessage.type) {
     case fk_module_QueryType_QUERY_CAPABILITIES: {
-        debugfln("i2c: capabilities");
+        debugfln("fk: capabilities");
 
         fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
         replyMessage.type = fk_module_ReplyType_REPLY_CAPABILITIES;
@@ -141,7 +141,7 @@ static void fk_module_tick_reply(fk_serialized_message_t *incoming, fk_module_t 
 
         fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &replyMessage, fkm->reply_pool);
         if (sm == nullptr) {
-            debugfln("i2c: error serializing reply");
+            debugfln("fk: error serializing reply");
             return;
         }
         APR_RING_INSERT_TAIL(&fkm->messages, sm, fk_serialized_message_t, link);
@@ -149,7 +149,7 @@ static void fk_module_tick_reply(fk_serialized_message_t *incoming, fk_module_t 
         break;
     }
     case fk_module_QueryType_QUERY_BEGIN_TAKE_READINGS: {
-        debugfln("i2c: begin take readings");
+        debugfln("fk: begin take readings");
 
         fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
         replyMessage.type = fk_module_ReplyType_REPLY_READING_STATUS;
@@ -161,7 +161,7 @@ static void fk_module_tick_reply(fk_serialized_message_t *incoming, fk_module_t 
 
         fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &replyMessage, fkm->reply_pool);
         if (sm == nullptr) {
-            debugfln("i2c: error serializing reply");
+            debugfln("fk: error serializing reply");
             return;
         }
         APR_RING_INSERT_TAIL(&fkm->messages, sm, fk_serialized_message_t, link);
@@ -171,7 +171,7 @@ static void fk_module_tick_reply(fk_serialized_message_t *incoming, fk_module_t 
         break;
     }
     case fk_module_QueryType_QUERY_READING_STATUS: {
-        debugfln("i2c: reading status");
+        debugfln("fk: reading status");
 
         fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
         replyMessage.type = fk_module_ReplyType_REPLY_READING_STATUS;
@@ -200,7 +200,7 @@ static void fk_module_tick_reply(fk_serialized_message_t *incoming, fk_module_t 
 
         fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &replyMessage, fkm->reply_pool);
         if (sm == nullptr) {
-            debugfln("i2c: error serializing reply");
+            debugfln("fk: error serializing reply");
             return;
         }
         APR_RING_INSERT_TAIL(&fkm->messages, sm, fk_serialized_message_t, link);
@@ -212,7 +212,7 @@ static void fk_module_tick_reply(fk_serialized_message_t *incoming, fk_module_t 
         break;
     }
     default: {
-        debugfln("i2c: unknown query type");
+        debugfln("fk: unknown query type");
         break;
     }
     }

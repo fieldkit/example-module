@@ -8,7 +8,7 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
 
     APR_RING_INIT(devices, fk_device_t, link);
 
-    debugfln("i2c: scanning...");
+    debugfln("fk: scanning...");
 
     Wire.begin();
 
@@ -17,13 +17,13 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
     wireMessage.queryCapabilities.version = FK_MODULE_PROTOCOL_VERSION;
 
     for (uint8_t i = 1; i < 128; ++i) {
-        if (i2c_device_send_message(i, fk_module_WireMessageQuery_fields, &wireMessage) == WIRE_SEND_SUCCESS) {
-            debugfln("i2c[%d]: query caps...", i);
+        if (fk_i2c_device_send_message(i, fk_module_WireMessageQuery_fields, &wireMessage) == WIRE_SEND_SUCCESS) {
+            debugfln("fk[%d]: query caps...", i);
 
             fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
-            uint8_t status = i2c_device_poll(i, &replyMessage, fkp, 1000);
+            uint8_t status = fk_i2c_device_poll(i, &replyMessage, fkp, 1000);
             if (status == WIRE_SEND_SUCCESS) {
-                debugfln("i2c[%d]: found slave type=%d version=%d type=%d name=%s", i,
+                debugfln("fk[%d]: found slave type=%d version=%d type=%d name=%s", i,
                          replyMessage.type, replyMessage.capabilities.version,
                          replyMessage.capabilities.type,
                          replyMessage.capabilities.name.arg);
@@ -36,7 +36,7 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
                 APR_RING_INSERT_TAIL(devices, n, fk_device_t, link);
             }
             else {
-                debugfln("i2c[%d]: bad handshake", i);
+                debugfln("fk[%d]: bad handshake", i);
             }
         }
     }
@@ -45,17 +45,17 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
 }
 
 bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp) {
-    debugfln("i2c[%d]: taking reading", device->address);
+    debugfln("fk[%d]: taking reading", device->address);
 
     fk_module_WireMessageQuery queryMessage = fk_module_WireMessageQuery_init_default;
     queryMessage.type = fk_module_QueryType_QUERY_BEGIN_TAKE_READINGS;
     queryMessage.beginTakeReadings.index = 0;
-    if (i2c_device_send_message(device->address, fk_module_WireMessageQuery_fields, &queryMessage) != WIRE_SEND_SUCCESS) {
+    if (fk_i2c_device_send_message(device->address, fk_module_WireMessageQuery_fields, &queryMessage) != WIRE_SEND_SUCCESS) {
         return false;
     }
 
     fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
-    uint8_t status = i2c_device_poll(device->address, &replyMessage, fkp, 1000);
+    uint8_t status = fk_i2c_device_poll(device->address, &replyMessage, fkp, 1000);
     if (status != WIRE_SEND_SUCCESS) {
         return false;
     }
@@ -64,16 +64,16 @@ bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp) {
 }
 
 bool fk_devices_reading_status(fk_device_t *device, fk_module_readings_t **readings, fk_pool_t *fkp) {
-    debugfln("i2c[%d]: reading status", device->address);
+    debugfln("fk[%d]: reading status", device->address);
 
     fk_module_WireMessageQuery queryMessage = fk_module_WireMessageQuery_init_default;
     queryMessage.type = fk_module_QueryType_QUERY_READING_STATUS;
-    if (i2c_device_send_message(device->address, fk_module_WireMessageQuery_fields, &queryMessage) != WIRE_SEND_SUCCESS) {
+    if (fk_i2c_device_send_message(device->address, fk_module_WireMessageQuery_fields, &queryMessage) != WIRE_SEND_SUCCESS) {
         return false;
     }
 
     fk_module_WireMessageReply replyMessage = fk_module_WireMessageReply_init_zero;
-    uint8_t status = i2c_device_poll(device->address, &replyMessage, fkp, 1000);
+    uint8_t status = fk_i2c_device_poll(device->address, &replyMessage, fkp, 1000);
     if (status != WIRE_SEND_SUCCESS) {
         debugfln("FAIL");
         return false;
@@ -83,7 +83,7 @@ bool fk_devices_reading_status(fk_device_t *device, fk_module_readings_t **readi
     case fk_module_ReadingState_DONE : {
         (*readings) = (fk_module_readings_t *)fk_pool_malloc(fkp, sizeof(fk_module_readings_t));
 
-        debugfln("GOT DATA: %d", fk_pool_used(fkp));
+        debugfln("fk: data: %d", fk_pool_used(fkp));
 
         break;
     }

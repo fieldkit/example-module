@@ -60,7 +60,7 @@ void setup() {
         while (true) {
             for (fk_device_t *d = APR_RING_FIRST(devices); d != APR_RING_SENTINEL(devices, fk_device_t, link); d = APR_RING_NEXT(d, link)) {
                 if (!fk_devices_begin_take_reading(d, readingPool)) {
-                    debugfln("i2c: error beginning take readings");
+                    debugfln("dummy: error beginning take readings");
                 }
             }
 
@@ -70,7 +70,7 @@ void setup() {
                     fk_module_readings_t *readings = nullptr;
 
                     if (!fk_devices_reading_status(d, &readings, readingPool)) {
-                        debugfln("i2c: error getting reading status");
+                        debugfln("dummy: error getting reading status");
                         done = true;
                         break;
                     }

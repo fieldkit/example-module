@@ -2,7 +2,11 @@ set(SOURCE_FILES
   fk-module-dummy.cpp
   fk-pool.cpp
   fk-module.cpp
+  fk-master.cpp
   debug.cpp
+  readings.cpp
+  protobuf.cpp
+  comms.cpp
 )
 
 set(LIBRARIES

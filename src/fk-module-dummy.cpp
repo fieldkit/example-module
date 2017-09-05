@@ -1,9 +1,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#include <fk-module-protocol.h>
-#include <fk-pool.h>
 #include <fk-module.h>
+#include <fk-master.h>
 #include <debug.h>
 
 #define LED_PIN                                               13

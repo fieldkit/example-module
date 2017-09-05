@@ -3,6 +3,8 @@
 
 #include "debug.h"
 
+const uint32_t FK_DEBUG_LINE_MAX = 128;
+
 void debugf(char *fmt, ...) {
     char buf[FK_DEBUG_LINE_MAX];
     va_list args;

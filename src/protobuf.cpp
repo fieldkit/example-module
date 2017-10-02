@@ -1,4 +1,5 @@
 #include "protobuf.h"
+#include "debug.h"
 
 fk_pb_reader_t *fk_pb_reader_create(fk_pool_t *pool) {
     fk_pb_reader_t *reader = (fk_pb_reader_t *)fk_pool_malloc(pool, sizeof(fk_pb_reader_t));
@@ -72,6 +73,25 @@ bool fk_pb_decode_readings(pb_istream_t *stream, const pb_field_t *field, void *
     n->time = wire_reading.time;
     n->value = wire_reading.value;
     APR_RING_INSERT_TAIL(reader->readings, n, fk_module_reading_t, link);
+
+    return true;
+}
+
+bool fk_pb_encode_array(pb_ostream_t *stream, const pb_field_t *field, void * const *arg) {
+    fk_pb_array_t *array = (fk_pb_array_t *)*arg;
+
+    uint8_t *ptr = (uint8_t *)array->buffer;
+    for (size_t i = 0; i < array->length; ++i) {
+        if (!pb_encode_tag_for_field(stream, field)) {
+            return false;
+        }
+
+        if (!pb_encode_submessage(stream, array->fields, ptr)) {
+            return false;
+        }
+
+        ptr += array->item_size;
+    }
 
     return true;
 }

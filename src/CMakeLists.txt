@@ -3,9 +3,11 @@ set(SOURCE_FILES
   fk-pool.cpp
   fk-module.cpp
   fk-master.cpp
+  fk-core.cpp
   debug.cpp
   readings.cpp
   protobuf.cpp
+  app-protobuf.cpp
   comms.cpp
 )
 

@@ -3,18 +3,10 @@
 
 #include <fk-module.h>
 #include <fk-master.h>
+#include <fk-core.h>
 #include <debug.h>
 
-#define LED_PIN                                               13
-
-void blink(uint8_t pin, uint8_t times) {
-    while (times--) {
-        digitalWrite(pin, HIGH);
-        delay(500);
-        digitalWrite(pin, LOW);
-        delay(500);
-    }
-}
+const uint8_t LED_PIN = 13;
 
 uint8_t dummy_reading(fk_module_t *fkm, fk_pool_t *fkp) {
     debugfln("dummy: taking reading");
@@ -37,7 +29,9 @@ uint8_t dummy_reading(fk_module_t *fkm, fk_pool_t *fkp) {
 void setup() {
     Serial.begin(115200);
 
-    while (!Serial) {
+    digitalWrite(LED_PIN, LOW);
+
+    while (!Serial && millis() < 4000) {
         delay(10);
     }
 
@@ -50,54 +44,71 @@ void setup() {
     bool master = fk_devices_exists(devices, 8);
 
     if (master) {
+        debugfln("dummy: acting as master");
+
+        fk_pool_t *core_pool = nullptr;
+        fk_pool_create(&core_pool, 256, nullptr);
+
         fk_pool_t *reading_pool = nullptr;
         fk_pool_create(&reading_pool, 256, nullptr);
 
-        debugfln("dummy: acting as master");
+        digitalWrite(LED_PIN, HIGH);
+
+        fk_core_t core;
+
+        if (!fk_core_start(&core, core_pool)) {
+            debugfln("fk-core: failed");
+        }
 
         delay(1000);
 
         while (true) {
-            fk_device_t *d = nullptr;
-            APR_RING_FOREACH(d, devices, fk_device_t, link) {
-                if (!fk_devices_begin_take_reading(d, reading_pool)) {
-                    debugfln("dummy: error beginning take readings");
-                }
-            }
-
-            while (true) {
-                bool done = false;
+            if (false) {
+                fk_device_t *d = nullptr;
                 APR_RING_FOREACH(d, devices, fk_device_t, link) {
-                    fk_module_readings_t *readings = nullptr;
+                    if (!fk_devices_begin_take_reading(d, reading_pool)) {
+                        debugfln("dummy: error beginning take readings");
+                    }
+                }
 
-                    if (!fk_devices_reading_status(d, &readings, reading_pool)) {
-                        debugfln("dummy: error getting reading status");
-                        done = true;
+                while (true) {
+                    bool done = false;
+                    APR_RING_FOREACH(d, devices, fk_device_t, link) {
+                        fk_module_readings_t *readings = nullptr;
+
+                        if (!fk_devices_reading_status(d, &readings, reading_pool)) {
+                            debugfln("dummy: error getting reading status");
+                            done = true;
+                            break;
+                        }
+
+                        if (readings != nullptr) {
+                            fk_module_reading_t *r = nullptr;
+
+                            APR_RING_FOREACH(r, readings, fk_module_reading_t, link) {
+                                debugfln("dummy: reading %d '%f'", r->time, r->value);
+                            }
+
+                            debugfln("dummy: done, (free = %d)", fk_free_memory());
+
+                            done = true;
+                        }
+                    }
+
+                    if (done) {
+                        fk_pool_empty(reading_pool);
                         break;
                     }
 
-                    if (readings != nullptr) {
-                        fk_module_reading_t *r = nullptr;
-
-                        APR_RING_FOREACH(r, readings, fk_module_reading_t, link) {
-                            debugfln("dummy: reading %d '%f'", r->time, r->value);
-                        }
-
-                        debugfln("dummy: done, (free = %d)", fk_free_memory());
-
-                        done = true;
-                    }
+                    delay(250);
                 }
-
-                if (done) {
-                    fk_pool_empty(reading_pool);
-                    break;
-                }
-
-                delay(250);
             }
 
-            delay(5000);
+            uint32_t started = millis();
+            while (millis() - started < 5000) {
+                fk_core_tick(&core);
+                delay(10);
+            }
         }
     }
     else {

@@ -1,2 +1,4 @@
 https://github.com/nanopb/nanopb.git
+https://github.com/arduino-libraries/WiFi101.git
 ../fk-module-protocol
+../fk-app-protocol

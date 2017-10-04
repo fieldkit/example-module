@@ -47,7 +47,7 @@ void setup() {
         debugfln("dummy: acting as master");
 
         fk_pool_t *core_pool = nullptr;
-        fk_pool_create(&core_pool, 256, nullptr);
+        fk_pool_create(&core_pool, 4196, nullptr);
 
         fk_pool_t *reading_pool = nullptr;
         fk_pool_create(&reading_pool, 256, nullptr);

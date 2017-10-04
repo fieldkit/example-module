@@ -5,7 +5,7 @@
 #include "debug.h"
 #include "fk-pool.h"
 
-#define POOL_DEBUG(f, ...)  // debugfln(f, __VA_ARGS__)
+#define POOL_DEBUG(f, ...)  debugfln(f, __VA_ARGS__)
 
 bool fk_pool_create(fk_pool_t **pool, size_t size, fk_pool_t *parent) {
     fk_pool_t *fkp = nullptr;
@@ -39,7 +39,7 @@ bool fk_pool_create(fk_pool_t **pool, size_t size, fk_pool_t *parent) {
         }
     }
 
-    POOL_DEBUG("pcreate: 0x%x ptr=0x%x block=0x%x", (uint8_t *)fkp, fkp->ptr, fkp->block);
+    POOL_DEBUG("fkpcreate: 0x%x ptr=0x%x block=0x%x (free=%d)", (uint8_t *)fkp, fkp->ptr, fkp->block, fk_free_memory());
 
     (*pool) = fkp;
 
@@ -54,7 +54,7 @@ bool fk_pool_free(fk_pool_t *pool) {
 
     free((void *)pool);
 
-    POOL_DEBUG("  pfree: 0x%x", pool);
+    POOL_DEBUG("  fkpfree: 0x%x", pool);
 
     return true;
 }
@@ -65,11 +65,13 @@ void fk_pool_empty(fk_pool_t *pool) {
     pool->ptr = pool->block;
     pool->remaining = pool->size;
 
-    POOL_DEBUG(" pempty: 0x%x", pool);
+    POOL_DEBUG(" fkpempty: 0x%x", pool);
 }
 
 void *fk_pool_malloc(fk_pool_t *pool, size_t size) {
     size_t aligned = size + (4 - (size % 4));
+
+    POOL_DEBUG(" fkpalloc: 0x%x size=%d aligned=%d (free=%d)", pool, size, aligned, pool->remaining - aligned);
 
     fk_assert(pool != nullptr);
     fk_assert(pool->size >= aligned);
@@ -78,8 +80,6 @@ void *fk_pool_malloc(fk_pool_t *pool, size_t size) {
     uint8_t *p = pool->ptr;
     pool->ptr += aligned;
     pool->remaining -= aligned;
-
-    POOL_DEBUG(" palloc: 0x%x %d %d (0x%x %d)", pool, size, aligned, p, p - pool->block);
 
     return (void *)p;
 }

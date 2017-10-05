@@ -1,4 +1,7 @@
 https://github.com/nanopb/nanopb.git
 https://github.com/arduino-libraries/WiFi101.git
+https://github.com/Conservify/Adafruit_ASFcore.git
+https://github.com/adafruit/Adafruit_ZeroDMA.git
 ../fk-module-protocol
 ../fk-app-protocol
+../fkfs

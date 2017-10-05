@@ -6,7 +6,15 @@
 #include <fk-core.h>
 #include <debug.h>
 
+#include <sd_raw.h>
+#include <fkfs.h>
+#include <fkfs_log.h>
+
 const uint8_t LED_PIN = 13;
+const uint8_t SD_PIN_CS = 10;
+const uint8_t FKFS_FILE_LOG = 0;
+const uint8_t FKFS_FILE_PRIORITY_LOWEST = 255;
+const uint8_t FKFS_FILE_PRIORITY_HIGHEST = 0;
 
 uint8_t dummy_reading(fk_module_t *fkm, fk_pool_t *fkp) {
     debugfln("dummy: taking reading");
@@ -26,6 +34,31 @@ uint8_t dummy_reading(fk_module_t *fkm, fk_pool_t *fkp) {
     return true;
 }
 
+bool setup_logging() {
+    fkfs_t fs = { 0 };
+    fkfs_log_t log = { 0 };
+
+    if (!fkfs_create(&fs)) {
+        debugfln("fkfs_create failed");
+        return false;
+    }
+
+    pinMode(SD_PIN_CS, OUTPUT);
+    digitalWrite(SD_PIN_CS, LOW);
+
+    if (!sd_raw_initialize(&fs.sd, SD_PIN_CS)) {
+        debugfln("sd_raw_initialize failed");
+        return false;
+    }
+
+    if (!fkfs_initialize_file(&fs, FKFS_FILE_LOG, FKFS_FILE_PRIORITY_LOWEST, false, "DEBUG.LOG")) {
+        debugfln("fkfs_initialize failed");
+        return false;
+    }
+
+    return true;
+}
+
 void setup() {
     Serial.begin(115200);
 
@@ -33,6 +66,12 @@ void setup() {
 
     while (!Serial && millis() < 4000) {
         delay(10);
+    }
+
+    if (!setup_logging()) {
+        while (true) {
+            delay(10);
+        }
     }
 
     debugfln("dummy: ready, checking (free = %d)...", fk_free_memory());

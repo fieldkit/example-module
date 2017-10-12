@@ -195,7 +195,7 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
         break;
     }
     case fk_app_QueryType_QUERY_DATA_SETS: {
-        debugfln("fk-core: data sets");
+        debugfln("fk-core: query data sets");
 
         fk_app_DataSet data_sets[] = {
             {
@@ -229,14 +229,56 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
 
         break;
     }
+    case fk_app_QueryType_QUERY_DATA_SET: {
+        debugfln("fk-core: query data set");
+
+        fk_app_DataSet data_sets[] = {
+            {
+                .id = 0,
+                .sensor = 0,
+                .name = {
+                    .funcs = {
+                        .encode = fk_pb_encode_string,
+                    },
+                    .arg = (void *)"Temperature",
+                },
+                .size = 100,
+                .time = millis(),
+                .hash = 0,
+            },
+        };
+
+        fk_pb_array_t data_sets_array = {
+            .length = sizeof(data_sets) / sizeof(fk_app_DataSet),
+            .item_size = sizeof(fk_app_DataSet),
+            .buffer = &data_sets,
+            .fields = fk_app_DataSet_fields,
+        };
+
+        fk_app_WireMessageReply reply_message = fk_app_WireMessageReply_init_zero;
+        reply_message.type = fk_app_ReplyType_REPLY_DATA_SET;
+        reply_message.dataSets.dataSets.funcs.encode = fk_pb_encode_array;
+        reply_message.dataSets.dataSets.arg = (void *)&data_sets_array;
+
+        fk_core_connection_write(fkc, cl, &reply_message);
+
+        break;
+    }
+    case fk_app_QueryType_QUERY_ERASE_DATA_SET: {
+        debugfln("fk-core: erase data set");
+
+        fk_app_WireMessageReply reply_message = fk_app_WireMessageReply_init_zero;
+        reply_message.type = fk_app_ReplyType_REPLY_SUCCESS;
+
+        fk_core_connection_write(fkc, cl, &reply_message);
+
+        break;
+    }
     /*
     case fk_app_QueryType_QUEYR_CONFIGURE_SENSOR: {
         break;
     }
     case fk_app_QueryType_QUERY_DOWNLOAD_DATA_SET: {
-        break;
-    }
-    case fk_app_QueryType_QUERY_ERASE_DATA_SET: {
         break;
     }
     */

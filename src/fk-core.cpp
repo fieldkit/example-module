@@ -186,7 +186,7 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
         reply_message.type = fk_app_ReplyType_REPLY_CAPABILITIES;
         reply_message.capabilities.version = FK_APP_PROTOCOL_VERSION;
         reply_message.capabilities.name.funcs.encode = fk_pb_encode_string;
-        reply_message.capabilities.name.arg = (void *)"iNaturalist";
+        reply_message.capabilities.name.arg = (void *)"NOAA-CTD";
         reply_message.capabilities.sensors.funcs.encode = fk_pb_encode_array;
         reply_message.capabilities.sensors.arg = (void *)&sensors_array;
 

@@ -178,7 +178,7 @@ void setup() {
 
         fk_module_t module = {
             8,
-            "iNaturalist",
+            "NOAA-CTD",
             dummy_reading,
             fk_module_state_t::START,
             nullptr,

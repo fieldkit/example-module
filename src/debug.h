@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+typedef void (*debug_hook_fn_t)(const char *str, void *arg);
+
+void debug_add_hook(debug_hook_fn_t hook, void *arg);
 void debugf(char *fmt, ...);
 void debugfln(char *fmt, ...);
 

@@ -5,7 +5,7 @@
 #include "debug.h"
 #include "fk-pool.h"
 
-#define POOL_DEBUG(f, ...)  debugfln(f, __VA_ARGS__)
+#define POOL_DEBUG(f, ...)  // debugfln(f, __VA_ARGS__)
 
 bool fk_pool_create(fk_pool_t **pool, size_t size, fk_pool_t *parent) {
     fk_pool_t *fkp = nullptr;

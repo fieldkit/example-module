@@ -34,10 +34,14 @@ uint8_t dummy_reading(fk_module_t *fkm, fk_pool_t *fkp) {
     return true;
 }
 
-bool setup_logging() {
-    fkfs_t fs = { 0 };
-    fkfs_log_t log = { 0 };
+static fkfs_t fs = { 0 };
+static fkfs_log_t fkfs_log = { 0 };
 
+void debug_write_log(const char *str, void *arg) {
+    fkfs_log_append(&fkfs_log, str);
+}
+
+bool setup_logging() {
     if (!fkfs_create(&fs)) {
         debugfln("fkfs_create failed");
         return false;
@@ -55,6 +59,25 @@ bool setup_logging() {
         debugfln("fkfs_initialize failed");
         return false;
     }
+
+    if (!fkfs_log_initialize(&fkfs_log, &fs, FKFS_FILE_LOG)) {
+        debugfln("fkfs_log_initialize failed");
+        return false;
+    }
+
+    if (!fkfs_initialize(&fs, true)) {
+        debugfln("fkfs_initialize failed");
+        return false;
+    }
+    fkfs_log_statistics(&fs);
+
+    if (!fkfs_initialize(&fs, false)) {
+        debugfln("fkfs_initialize failed");
+        return false;
+    }
+    fkfs_log_statistics(&fs);
+
+    debug_add_hook(debug_write_log, &fkfs_log);
 
     return true;
 }

@@ -5,6 +5,7 @@
 
 #include "fk-app-protocol.h"
 #include "protobuf.h"
+#include "config.h"
 
 typedef struct fk_core_connection_t {
     WiFiClient *wifi;
@@ -29,23 +30,18 @@ bool fk_core_start(fk_core_t *fkc, fk_pool_t *pool) {
     }
     else {
         if (false) {
-            const char *ap_ssid = "FK-ABCD";
-
             debugfln("fk-core: creating AP...");
 
-            uint8_t status = WiFi.beginAP(ap_ssid);
+            uint8_t status = WiFi.beginAP(WIFI_AP_SSID);
             if (status != WL_AP_LISTENING) {
                 debugfln("fk-core: creating AP failed");
                 return false;
             }
         }
         else {
-            const char *ssid = "Conservify";
-            const char *pw = "Okavang0";
-
             debugfln("fk-core: connecting to AP...");
 
-            WiFi.begin(ssid, pw);
+            WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
         }
     }
 
@@ -140,7 +136,7 @@ static bool fk_core_connection_read(fk_core_t *fkc, fk_core_connection_t *cl, fk
 static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t *cl, fk_app_WireMessageQuery *query) {
     switch (query->type) {
     case fk_app_QueryType_QUERY_CAPABILITIES: {
-        debugfln("fk-core: capabilities");
+        debugfln("fk-core: capabilities (callerTime = %d)", query->queryCapabilities.callerTime);
 
         fk_app_SensorCapabilities sensors[] = {
             {

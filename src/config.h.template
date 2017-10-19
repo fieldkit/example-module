@@ -1,0 +1,8 @@
+#ifndef FK_CONFIG_H_INCLUDED
+#define FK_CONFIG_H_INCLUDED
+
+const char *WIFI_AP_SSID = "";
+const char *WIFI_SSID = "";
+const char *WIFI_PASSWORD = "";
+
+#endif

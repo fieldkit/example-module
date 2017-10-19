@@ -95,3 +95,41 @@ bool fk_pb_encode_array(pb_ostream_t *stream, const pb_field_t *field, void * co
 
     return true;
 }
+
+bool fk_pb_encode_data(pb_ostream_t *stream, const pb_field_t *field, void * const *arg) {
+    fk_pb_data_t *data = (fk_pb_data_t *)*arg;
+
+    if (!pb_encode_tag_for_field(stream, field)) {
+        return false;
+    }
+
+    if (!pb_encode_varint(stream, data->length)) {
+        return false;
+    }
+
+    uint8_t *ptr = (uint8_t *)data->buffer;
+    if (!pb_write(stream, ptr, data->length)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool fk_pb_encode_floats(pb_ostream_t *stream, const pb_field_t *field, void * const *arg) {
+    fk_pb_data_t *data = (fk_pb_data_t *)*arg;
+
+    float *ptr = (float *)data->buffer;
+    for (size_t i = 0; i < data->length; ++i) {
+        if (!pb_encode_tag_for_field(stream, field)) {
+            return false;
+        }
+
+        if (!pb_encode_fixed32(stream, ptr)) {
+            return false;
+        }
+
+        ptr++;
+    }
+
+    return true;
+}

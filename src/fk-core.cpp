@@ -195,21 +195,22 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
         break;
     }
     case fk_app_QueryType_QUERY_DATA_SETS: {
-        debugfln("fk-core: query data sets");
+        debugfln("fk-core: query ds");
 
         fk_app_DataSet data_sets[] = {
             {
                 .id = 0,
                 .sensor = 0,
+                .time = millis(),
+                .size = 100,
+                .pages = 10,
+                .hash = 0,
                 .name = {
                     .funcs = {
                         .encode = fk_pb_encode_string,
                     },
-                    .arg = (void *)"Temperature",
+                    .arg = (void *)"DS #1",
                 },
-                .size = 100,
-                .time = millis(),
-                .hash = 0,
             },
         };
 
@@ -229,22 +230,97 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
 
         break;
     }
+    case fk_app_QueryType_QUERY_DOWNLOAD_DATA_SET: {
+        debugfln("fk-core: download ds %d page=%d", query->downloadDataSet.id, query->downloadDataSet.page);
+
+        uint8_t buffer[1024] = { 0 };
+        fk_pb_data_t data = {
+            .length = 1024,
+            .buffer = buffer,
+        };
+
+        fk_app_WireMessageReply reply_message = fk_app_WireMessageReply_init_zero;
+        reply_message.type = fk_app_ReplyType_REPLY_DOWNLOAD_DATA_SET;
+        reply_message.dataSetData.time = millis();
+        reply_message.dataSetData.page = query->downloadDataSet.page;
+        reply_message.dataSetData.data.funcs.encode = fk_pb_encode_data;
+        reply_message.dataSetData.data.arg = (void *)&data;
+        reply_message.dataSetData.hash = 0;
+
+        fk_core_connection_write(fkc, cl, &reply_message);
+
+        break;
+    }
+    case fk_app_QueryType_QUERY_LIVE_DATA_POLL: {
+        debugfln("fk-core: live ds (interval = %d)", query->liveDataPoll.interval);
+
+        float float_data_array[] = { 12.43 };
+        fk_pb_data_t float_data = {
+            .length = 1,
+            .buffer = float_data_array,
+        };
+
+        uint8_t raw_data_array[4] = { 0 };
+        fk_pb_data_t raw_data = {
+            .length = 4,
+            .buffer = raw_data_array,
+        };
+
+        fk_app_DataSetData live_data[] = {
+            {
+                .time = millis(),
+                .page = 0,
+                .sensor = 1,
+                .samples = { },
+                .floats = {
+                    .funcs = {
+                        .encode = fk_pb_encode_floats,
+                    },
+                    .arg = (void *)&float_data,
+                },
+                .data = {
+                    .funcs = {
+                        .encode = fk_pb_encode_data,
+                    },
+                    .arg = (void *)&raw_data,
+                },
+                .hash = 0,
+            },
+        };
+
+        fk_pb_array_t live_data_array = {
+            .length = sizeof(live_data) / sizeof(fk_app_DataSetData),
+            .item_size = sizeof(fk_app_DataSetData),
+            .buffer = &live_data,
+            .fields = fk_app_DataSetData_fields,
+        };
+
+        fk_app_WireMessageReply reply_message = fk_app_WireMessageReply_init_zero;
+        reply_message.type = fk_app_ReplyType_REPLY_LIVE_DATA_POLL;
+        reply_message.liveData.dataSetDatas.funcs.encode = fk_pb_encode_array;
+        reply_message.liveData.dataSetDatas.arg = (void *)&live_data_array;
+
+        fk_core_connection_write(fkc, cl, &reply_message);
+
+        break;
+    }
     case fk_app_QueryType_QUERY_DATA_SET: {
-        debugfln("fk-core: query data set");
+        debugfln("fk-core: query ds");
 
         fk_app_DataSet data_sets[] = {
             {
                 .id = 0,
                 .sensor = 0,
+                .time = millis(),
+                .size = 100,
+                .pages = 10,
+                .hash = 0,
                 .name = {
                     .funcs = {
                         .encode = fk_pb_encode_string,
                     },
-                    .arg = (void *)"Temperature",
+                    .arg = (void *)"DS #1",
                 },
-                .size = 100,
-                .time = millis(),
-                .hash = 0,
             },
         };
 
@@ -265,7 +341,7 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
         break;
     }
     case fk_app_QueryType_QUERY_ERASE_DATA_SET: {
-        debugfln("fk-core: erase data set");
+        debugfln("fk-core: erase ds");
 
         fk_app_WireMessageReply reply_message = fk_app_WireMessageReply_init_zero;
         reply_message.type = fk_app_ReplyType_REPLY_SUCCESS;
@@ -274,14 +350,6 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
 
         break;
     }
-    /*
-    case fk_app_QueryType_QUEYR_CONFIGURE_SENSOR: {
-        break;
-    }
-    case fk_app_QueryType_QUERY_DOWNLOAD_DATA_SET: {
-        break;
-    }
-    */
     default: {
         debugfln("fk-core: unknown query type %d", query->type);
 

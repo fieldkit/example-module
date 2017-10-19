@@ -39,7 +39,7 @@ bool fk_pool_create(fk_pool_t **pool, size_t size, fk_pool_t *parent) {
         }
     }
 
-    POOL_DEBUG("fkpcreate: 0x%x ptr=0x%x block=0x%x (free=%d)", (uint8_t *)fkp, fkp->ptr, fkp->block, fk_free_memory());
+    POOL_DEBUG("fkpcreate: 0x%x size=%d ptr=0x%x block=0x%x (free=%d)", (uint8_t *)fkp, size, fkp->ptr, fkp->block, fk_free_memory());
 
     (*pool) = fkp;
 

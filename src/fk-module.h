@@ -22,9 +22,16 @@ enum class fk_module_state_t {
     DONE_READING = 4
 };
 
+typedef struct fk_module_sensor_metadata_t {
+    int32_t id;
+    const char *name;
+} fk_module_sensor_metadata_t;
+
 struct fk_module_t {
     uint8_t address;
     const char *name;
+    int32_t number_of_sensors;
+    fk_module_sensor_metadata_t *sensors;
     fk_module_begin_reading_t begin_reading;
     fk_module_state_t state;
     fk_pool_t *reply_pool;

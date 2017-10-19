@@ -99,10 +99,10 @@ void setup() {
 
     debugfln("dummy: ready, checking (free = %d)...", fk_free_memory());
 
-    fk_pool_t *fkp = nullptr;
-    fk_pool_create(&fkp, 256, nullptr);
+    fk_pool_t *scan_pool = nullptr;
+    fk_pool_create(&scan_pool, 512, nullptr);
 
-    fk_device_ring_t *devices = fk_devices_scan(fkp);
+    fk_device_ring_t *devices = fk_devices_scan(scan_pool);
     bool master = fk_devices_exists(devices, 8);
 
     if (master) {
@@ -176,14 +176,32 @@ void setup() {
     else {
         debugfln("dummy: acting as slave");
 
+        fk_module_sensor_metadata_t sensors[] = {
+            {
+                .id = 0,
+                .name = "Depth",
+            },
+            {
+                .id = 1,
+                .name = "Temperature",
+            },
+            {
+                .id = 2,
+                .name = "Conductivity",
+            }
+        };
+
         fk_module_t module = {
-            8,
-            "NOAA-CTD",
-            dummy_reading,
-            fk_module_state_t::START,
-            nullptr,
-            nullptr,
-            nullptr
+            .address = 8,
+            .name = "NOAA-CTD",
+            .number_of_sensors = sizeof(sensors) / sizeof(fk_module_sensor_metadata_t),
+            .sensors = sensors,
+            .begin_reading = dummy_reading,
+            .state = fk_module_state_t::START,
+            .reply_pool = nullptr,
+            .readings_pool = nullptr,
+            .readings = nullptr,
+            .pending = nullptr
         };
 
         if (!fk_module_start(&module, nullptr)) {

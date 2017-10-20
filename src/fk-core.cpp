@@ -60,6 +60,8 @@ bool fk_core_start(fk_core_t *fkc, fk_device_ring_t *devices, fk_pool_t *pool) {
 
     fkc->devices = devices;
 
+    fk_pool_create(&fkc->live_data.pool, 256, nullptr);
+
     return true;
 }
 
@@ -93,6 +95,45 @@ void fk_core_tick(fk_core_t *fkc) {
         fkc->udp->beginPacket(destination, FK_CORE_PORT_UDP);
         fkc->udp->write(".");
         fkc->udp->endPacket();
+    }
+
+    if (fkc->live_data.interval > 0) {
+        // TODO: Use last_check being non-zero to know that we need to pull the final
+        // reading off the module.
+        if (millis() - fkc->live_data.last_check > 250) {
+            fk_device_t *d = nullptr;
+
+            APR_RING_FOREACH(d, fkc->devices, fk_device_t, link) {
+                fk_module_readings_t *readings = fkc->live_data.readings;
+
+                if (fkc->live_data.status != fk_module_ReadingState_IDLE) {
+                    if (!fk_devices_reading_status(d, &fkc->live_data.status, &fkc->live_data.readings, fkc->live_data.pool)) {
+                        debugfln("dummy: error getting reading status");
+                        break;
+                    }
+
+                    if (readings != nullptr) {
+                        fkc->live_data.readings = readings;
+                    }
+                }
+                else {
+                    if (fk_pool_used(fkc->live_data.pool) == 0) {
+                        fkc->live_data.readings = nullptr;
+
+                        if (millis() - fkc->live_data.last_read > fkc->live_data.interval) {
+                            if (!fk_devices_begin_take_reading(d, fkc->live_data.pool)) {
+                                debugfln("dummy: error beginning take readings");
+                            }
+
+                            fkc->live_data.last_read = millis();
+                            fkc->live_data.status = fk_module_ReadingState_BEGIN;
+                        }
+                    }
+                }
+            }
+
+            fkc->live_data.last_check = millis();
+        }
     }
 
     fk_core_connection_serve(fkc);
@@ -240,17 +281,41 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
     case fk_app_QueryType_QUERY_LIVE_DATA_POLL: {
         debugfln("fk-core: live ds (interval = %d)", query->liveDataPoll.interval);
 
-        float float_data_array[] = { 12.43 };
+        if (query->liveDataPoll.interval > 0) {
+            if (fkc->live_data.interval != query->liveDataPoll.interval) {
+                fkc->live_data.interval = query->liveDataPoll.interval;
+                fkc->live_data.status == fk_module_ReadingState_IDLE;
+                fkc->live_data.last_check = 0;
+            }
+        }
+        else {
+            fkc->live_data.interval = 0;
+            fkc->live_data.last_check = 0;
+        }
+
+        fk_module_reading_t *r = nullptr;
         fk_pb_data_t float_data = {
-            .length = 1,
-            .buffer = float_data_array,
+            .length = 0,
+            .buffer = nullptr,
         };
 
-        uint8_t raw_data_array[4] = { 0 };
-        fk_pb_data_t raw_data = {
-            .length = 4,
-            .buffer = raw_data_array,
-        };
+        if (fkc->live_data.readings != nullptr) {
+            size_t length = 0;
+            APR_RING_FOREACH(r, fkc->live_data.readings, fk_module_reading_t, link) {
+                length++;
+            }
+
+            if (length > 0) {
+                float *float_data_array = (float *)fk_pool_malloc(cl->pool, sizeof(float) * length);
+                float_data.length = length;
+                float_data.buffer = float_data_array;
+
+                size_t i = 0;
+                APR_RING_FOREACH(r, fkc->live_data.readings, fk_module_reading_t, link) {
+                    float_data_array[i++] = r->value;
+                }
+            }
+        }
 
         fk_app_DataSetData live_data[] = {
             {
@@ -265,10 +330,6 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
                     .arg = (void *)&float_data,
                 },
                 .data = {
-                    .funcs = {
-                        .encode = fk_pb_encode_data,
-                    },
-                    .arg = (void *)&raw_data,
                 },
                 .hash = 0,
             },
@@ -287,6 +348,9 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
         reply_message.liveData.dataSetDatas.arg = (void *)&live_data_array;
 
         fk_core_connection_write(fkc, cl, &reply_message);
+
+        fk_pool_empty(fkc->live_data.pool);
+        fkc->live_data.readings = nullptr;
 
         break;
     }

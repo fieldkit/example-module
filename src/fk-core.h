@@ -12,10 +12,20 @@
 #include "fk-pool.h"
 #include "attached-devices.h"
 
+typedef struct fk_live_data_t {
+    fk_pool_t *pool = nullptr;
+    uint32_t interval = 0;
+    uint32_t last_check = 0;
+    uint32_t last_read = 0;
+    uint8_t status = 0;
+    fk_module_readings_t *readings = nullptr;
+} fk_live_data_t;
+
 typedef struct fk_core_t {
     bool connected = 0;
-    fk_device_ring_t *devices;
     uint32_t last_heartbeat = 0;
+    fk_live_data_t live_data;
+    fk_device_ring_t *devices;
     WiFiUDP *udp;
     WiFiServer *server;
 } fk_core_t;

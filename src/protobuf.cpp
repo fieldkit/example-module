@@ -109,8 +109,10 @@ bool fk_pb_encode_data(pb_ostream_t *stream, const pb_field_t *field, void * con
     }
 
     uint8_t *ptr = (uint8_t *)data->buffer;
-    if (!pb_write(stream, ptr, data->length)) {
-        return false;
+    if (ptr != nullptr) {
+        if (!pb_write(stream, ptr, data->length)) {
+            return false;
+        }
     }
 
     return true;

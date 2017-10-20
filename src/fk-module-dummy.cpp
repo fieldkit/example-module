@@ -24,7 +24,7 @@ uint8_t dummy_reading(fk_module_t *fkm, fk_pool_t *fkp) {
     for (size_t i = 0; i < 2; ++i) {
         fk_module_reading_t *reading = (fk_module_reading_t *)fk_pool_malloc(fkp, sizeof(fk_module_reading_t));
         reading->time = millis();
-        reading->value = 100.0f;
+        reading->value = random(20, 150);
         APR_RING_INSERT_TAIL(readings, reading, fk_module_reading_t, link);
     }
 

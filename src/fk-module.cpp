@@ -73,8 +73,6 @@ static void module_request_callback() {
     fk_module_t *fkm = active_fkm;
 
     if (APR_RING_EMPTY(&fkm->messages, fk_serialized_message_t, link)) {
-        debugfln("fk: retry reply");
-
         fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
         reply_message.type = fk_module_ReplyType_REPLY_RETRY;
 
@@ -84,8 +82,6 @@ static void module_request_callback() {
         }
     }
     else {
-        debugfln("fk: real reply");
-
         fk_serialized_message_t *sm = nullptr;
         APR_RING_FOREACH(sm, &fkm->messages, fk_serialized_message_t, link) {
             uint8_t status = fk_i2c_device_send_block(0, sm->ptr, sm->length);

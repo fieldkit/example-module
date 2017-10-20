@@ -2,7 +2,6 @@
 #define FK_READINGS_INCLUDED
 
 #include "fk-general.h"
-#include "apr_ring.h"
 
 typedef struct fk_module_reading_t {
     uint32_t time;

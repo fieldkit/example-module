@@ -1,9 +1,8 @@
 #include "fk-general.h"
-#include "debug.h"
 #include "comms.h"
 #include "protobuf.h"
 
-fk_serialized_message_t *fk_serialize_message_create(const void *src, size_t size, fk_pool_t *fkp) {
+fk_serialized_message_t *fk_serialized_message_create(const void *src, size_t size, fk_pool_t *fkp) {
     fk_serialized_message_t *sm = (fk_serialized_message_t *)fk_pool_malloc(fkp, sizeof(fk_serialized_message_t) + size);
     uint8_t *ptr = (uint8_t *)(sm + 1);
     sm->length = size;
@@ -12,7 +11,7 @@ fk_serialized_message_t *fk_serialize_message_create(const void *src, size_t siz
     return sm;
 }
 
-fk_serialized_message_t *fk_serialize_message_serialize(const pb_field_t *fields, const void *src, fk_pool_t *fkp) {
+fk_serialized_message_t *fk_serialized_message_serialize(const pb_field_t *fields, const void *src, fk_pool_t *fkp) {
     uint8_t buffer[FK_MODULE_PROTOCOL_MAX_MESSAGE];
     pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
 
@@ -27,7 +26,7 @@ fk_serialized_message_t *fk_serialize_message_serialize(const pb_field_t *fields
     if (!status) {
         return nullptr;
     }
-    return fk_serialize_message_create(buffer, stream.bytes_written, fkp);
+    return fk_serialized_message_create(buffer, stream.bytes_written, fkp);
 }
 
 uint8_t fk_i2c_device_send_block(uint8_t address, const void *ptr, size_t size) {

@@ -1,10 +1,7 @@
 #ifndef FK_COMMS_INCLUDED
 #define FK_COMMS_INCLUDED
 
-#include <apr_ring.h>
 #include <fk-module-protocol.h>
-
-#include "fk-pool.h"
 
 const uint8_t WIRE_SEND_SUCCESS = 0;
 const uint8_t WIRE_SEND_DATA_TOO_LONG = 1;
@@ -20,9 +17,9 @@ typedef struct fk_serialized_message_t {
 
 APR_RING_HEAD(fk_serialized_message_ring_t, fk_serialized_message_t);
 
-fk_serialized_message_t *fk_serialize_message_create(const void *ptr, size_t size, fk_pool_t *fkp);
+fk_serialized_message_t *fk_serialized_message_create(const void *ptr, size_t size, fk_pool_t *fkp);
 
-fk_serialized_message_t *fk_serialize_message_serialize(const pb_field_t *fields, const void *src, fk_pool_t *fkp);
+fk_serialized_message_t *fk_serialized_message_serialize(const pb_field_t *fields, const void *src, fk_pool_t *fkp);
 
 uint8_t fk_i2c_device_send_block(uint8_t address, const void *ptr, size_t size);
 

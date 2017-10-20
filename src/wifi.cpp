@@ -1,5 +1,5 @@
+#include "fk-general.h"
 #include "fk-core.h"
-#include "debug.h"
 #include "wifi.h"
 
 const char *fk_wifi_status_string() {

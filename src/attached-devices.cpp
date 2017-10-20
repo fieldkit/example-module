@@ -1,5 +1,4 @@
-#include <debug.h>
-
+#include "fk-general.h"
 #include "attached-devices.h"
 #include "comms.h"
 

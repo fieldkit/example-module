@@ -1,11 +1,9 @@
 #include <new>
 
+#include "fk-general.h"
 #include "fk-core.h"
-#include "debug.h"
-
 #include "fk-app-protocol.h"
 #include "protobuf.h"
-#include "config.h"
 
 typedef struct fk_core_connection_t {
     fk_pool_t *pool;

@@ -1,8 +1,5 @@
-#include <Arduino.h>
-#include <Wire.h>
-
+#include "fk-general.h"
 #include "fk-module.h"
-#include "debug.h"
 
 static fk_module_t *active_fkm = nullptr;
 
@@ -112,7 +109,7 @@ static void module_receive_callback(int bytes) {
         }
 
         fk_module_t *fkm = active_fkm;
-        fkm->pending = fk_serialize_message_create(buffer, bytes, fkm->reply_pool);
+        fkm->pending = fk_serialized_message_create(buffer, bytes, fkm->reply_pool);
     }
 }
 
@@ -139,7 +136,7 @@ static void module_reply(fk_serialized_message_t *incoming, fk_module_t *fkm) {
         reply_message.capabilities.name.arg = (void *)fkm->name;
         reply_message.capabilities.numberOfSensors = fkm->number_of_sensors;
 
-        fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
+        fk_serialized_message_t *sm = fk_serialized_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
         if (sm == nullptr) {
             debugfln("fk: error serializing reply");
             return;
@@ -161,7 +158,7 @@ static void module_reply(fk_serialized_message_t *incoming, fk_module_t *fkm) {
         reply_message.sensorCapabilities.name.funcs.encode = fk_pb_encode_string;
         reply_message.sensorCapabilities.name.arg = (void *)fkm->sensors[index].name;
 
-        fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
+        fk_serialized_message_t *sm = fk_serialized_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
         if (sm == nullptr) {
             debugfln("fk: error serializing reply");
             return;
@@ -181,7 +178,7 @@ static void module_reply(fk_serialized_message_t *incoming, fk_module_t *fkm) {
         reply_message.capabilities.name.funcs.encode = fk_pb_encode_string;
         reply_message.capabilities.name.arg = (void *)fkm->name;
 
-        fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
+        fk_serialized_message_t *sm = fk_serialized_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
         if (sm == nullptr) {
             debugfln("fk: error serializing reply");
             return;
@@ -220,7 +217,7 @@ static void module_reply(fk_serialized_message_t *incoming, fk_module_t *fkm) {
         }
         }
 
-        fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
+        fk_serialized_message_t *sm = fk_serialized_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
         if (sm == nullptr) {
             debugfln("fk: error serializing reply");
             return;

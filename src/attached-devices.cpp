@@ -86,6 +86,13 @@ bool fk_devices_reading_status(fk_device_t *device, fk_module_readings_t **readi
     }
 
     fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
+    reply_message.error.message.funcs.decode = fk_pb_decode_string; 
+    reply_message.error.message.arg = fkp; 
+    reply_message.capabilities.name.funcs.decode = fk_pb_decode_string; 
+    reply_message.capabilities.name.arg = fkp; 
+    reply_message.sensorReadings.readings.funcs.decode = fk_pb_decode_readings; 
+    reply_message.sensorReadings.readings.arg = (void *)fk_pb_reader_create(fkp);
+
     uint8_t status = fk_i2c_device_poll(device->address, &reply_message, fkp, 1000);
     if (status != WIRE_SEND_SUCCESS) {
         return false;

@@ -54,13 +54,6 @@ uint8_t fk_i2c_device_poll(uint8_t address, fk_module_WireMessageReply *reply, f
     uint32_t started = millis();
 
     while (millis() - started < maximum) {
-        reply->error.message.funcs.decode = fk_pb_decode_string;
-        reply->error.message.arg = fkp;
-        reply->capabilities.name.funcs.decode = fk_pb_decode_string;
-        reply->capabilities.name.arg = fkp;
-        reply->sensorReadings.readings.funcs.decode = fk_pb_decode_readings;
-        reply->sensorReadings.readings.arg = (void *)fk_pb_reader_create(fkp);
-
         uint8_t status = fk_i2c_device_receive(address, fk_module_WireMessageReply_fields, reply, fkp);
         if (status != WIRE_SEND_SUCCESS) {
             return status;
@@ -92,7 +85,7 @@ uint8_t fk_i2c_device_receive(uint8_t address, const pb_field_t *fields, void *s
 
     pb_istream_t stream = pb_istream_from_buffer(buffer, bytes);
     if (!pb_decode_delimited(&stream, fields, src)) {
-        debugfln("fk: bad message");
+        debugfln("fk: bad message (%d)", bytes);
         return WIRE_SEND_OTHER;
     }
 

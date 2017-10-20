@@ -27,6 +27,7 @@ typedef struct fk_pb_array_t {
     size_t item_size;
     const void *buffer;
     const pb_field_t *fields;
+    fk_pool_t *pool;
 } fk_pb_array_t;
 
 bool fk_pb_encode_array(pb_ostream_t *stream, const pb_field_t *field, void * const *arg);

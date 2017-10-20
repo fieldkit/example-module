@@ -4,10 +4,15 @@
 #include <apr_ring.h>
 
 #include "protobuf.h"
+#include "attached-sensors.h"
 
 typedef struct fk_device_t {
     uint8_t address;
-    fk_module_Capabilities capabilities;
+    int32_t version;
+    fk_module_ModuleType type;
+    const char *name;
+    uint8_t number_of_sensors;
+    fk_attached_sensors_t sensors;
     APR_RING_ENTRY(fk_device_t) link;
 } fk_device_t;
 

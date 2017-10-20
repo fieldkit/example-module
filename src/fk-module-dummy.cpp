@@ -65,11 +65,13 @@ bool setup_logging() {
         return false;
     }
 
-    if (!fkfs_initialize(&fs, true)) {
-        debugfln("fkfs_initialize failed");
-        return false;
+    if (false) {
+        if (!fkfs_initialize(&fs, true)) {
+            debugfln("fkfs_initialize failed");
+            return false;
+        }
+        fkfs_log_statistics(&fs);
     }
-    fkfs_log_statistics(&fs);
 
     if (!fkfs_initialize(&fs, false)) {
         debugfln("fkfs_initialize failed");

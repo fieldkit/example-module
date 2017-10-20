@@ -1,5 +1,6 @@
 #include "protobuf.h"
 #include "debug.h"
+#include "attached-sensors.h"
 
 fk_pb_reader_t *fk_pb_reader_create(fk_pool_t *pool) {
     fk_pb_reader_t *reader = (fk_pb_reader_t *)fk_pool_malloc(pool, sizeof(fk_pb_reader_t));

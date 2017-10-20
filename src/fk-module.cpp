@@ -137,29 +137,29 @@ static void module_reply(fk_serialized_message_t *incoming, fk_module_t *fkm) {
         reply_message.capabilities.type = fk_module_ModuleType_SENSOR;
         reply_message.capabilities.name.funcs.encode = fk_pb_encode_string;
         reply_message.capabilities.name.arg = (void *)fkm->name;
-        reply_message.sensorCapabilities.numberOfSensors = fkm->number_of_sensors;
+        reply_message.capabilities.numberOfSensors = fkm->number_of_sensors;
 
-        fk_module_SensorMetadata sensors[1];
-
-        fk_pb_array_t sensors_array = {
-            .length = 1,
-            .item_size = sizeof(fk_module_SensorMetadata),
-            .buffer = sensors,
-            .fields = fk_module_SensorMetadata_fields,
-        };
-
-        if (wire_message.queryCapabilities.querySensor.query) {
-            int32_t index = wire_message.queryCapabilities.querySensor.sensor;
-
-            debugfln("fk: querying sensor %d", index);
-
-            sensors[0].id = fkm->sensors[index].id;
-            sensors[0].name.funcs.encode = fk_pb_encode_string;
-            sensors[0].name.arg = (void *)fkm->sensors[index].name;
-
-            reply_message.sensorCapabilities.sensors.funcs.encode = fk_pb_encode_array;
-            reply_message.sensorCapabilities.sensors.arg = (void *)&sensors_array;
+        fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
+        if (sm == nullptr) {
+            debugfln("fk: error serializing reply");
+            return;
         }
+        APR_RING_INSERT_TAIL(&fkm->messages, sm, fk_serialized_message_t, link);
+
+        break;
+    }
+    case fk_module_QueryType_QUERY_SENSOR_CAPABILITIES: {
+    	int32_t index = wire_message.querySensorCapabilities.sensor;
+
+        debugfln("fk: sensor caps (%d)", index);
+
+        fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
+        reply_message.type = fk_module_ReplyType_REPLY_CAPABILITIES;
+        reply_message.error.message.funcs.encode = fk_pb_encode_string;
+        reply_message.error.message.arg = nullptr;
+        reply_message.sensorCapabilities.id = fkm->sensors[index].id;
+        reply_message.sensorCapabilities.name.funcs.encode = fk_pb_encode_string;
+        reply_message.sensorCapabilities.name.arg = (void *)fkm->sensors[index].name;
 
         fk_serialized_message_t *sm = fk_serialize_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
         if (sm == nullptr) {

@@ -47,8 +47,8 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
                 n->number_of_sensors = reply_message.capabilities.numberOfSensors;
 
                 if (fk_device_query_sensors(n, fkp)) {
-                	APR_RING_INSERT_TAIL(devices, n, fk_device_t, link);
-		}
+                    APR_RING_INSERT_TAIL(devices, n, fk_device_t, link);
+                }
             }
             else {
                 debugfln("fk[%d]: bad handshake", address);
@@ -158,7 +158,7 @@ static bool fk_device_query_sensors(fk_device_t *device, fk_pool_t *fkp) {
             n->id = sensor_reply_message.sensorCapabilities.id;
             n->name = (const char *)sensor_reply_message.sensorCapabilities.name.arg;
             APR_RING_INSERT_TAIL(&device->sensors, n, fk_attached_sensor_t, link);
-       }
+        }
     }
 
     return true;

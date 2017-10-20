@@ -149,7 +149,7 @@ static void module_reply(fk_serialized_message_t *incoming, fk_module_t *fkm) {
         break;
     }
     case fk_module_QueryType_QUERY_SENSOR_CAPABILITIES: {
-    	int32_t index = wire_message.querySensorCapabilities.sensor;
+        int32_t index = wire_message.querySensorCapabilities.sensor;
 
         debugfln("fk: sensor caps (%d)", index);
 

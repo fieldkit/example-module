@@ -16,11 +16,11 @@ echo
 echo
 
 sleep 1
-sudo -E "/bin/bash" -c "(~/tools/bin/flasher --port /dev/$1 --tail --tail-inactivity 0) | sed \"s/^/slave  | /\"" &
+sudo -E "/bin/bash" -c "(~/tools/bin/flasher --port /dev/$1 --tail --tail-inactivity 0) | sed \"s/^/module | /\"" &
 S=$!
 
 sleep 1
-sudo -E "/bin/bash" -c "(~/tools/bin/flasher --port /dev/$2 --tail --tail-inactivity 0) | sed \"s/^/master | /\"" &
+sudo -E "/bin/bash" -c "(~/tools/bin/flasher --port /dev/$2 --tail --tail-inactivity 0) | sed \"s/^/  core | /\"" &
 M=$!
 
 trap ctrl_c INT

@@ -443,6 +443,7 @@ static bool fk_core_connection_serve(fk_core_t *fkc) {
     WiFiClient wifiCl = fkc->server->available();
     if (wifiCl) {
         fk_pool_t *pool = nullptr;
+        uint32_t started = millis();
 
         fk_pool_create(&pool, 256, nullptr);
 
@@ -453,7 +454,7 @@ static bool fk_core_connection_serve(fk_core_t *fkc) {
 
         debugfln("fk-core: accepted!");
 
-        while (cl.wifi->connected()) {
+        while (cl.wifi->connected() && millis() - started < 5000) {
             if (cl.wifi->available()) {
                 fk_app_WireMessageQuery query_message = fk_app_WireMessageQuery_init_zero;
                 fk_core_connection_read(fkc, &cl, &query_message);

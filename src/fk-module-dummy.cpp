@@ -16,8 +16,6 @@ const uint8_t FKFS_FILE_PRIORITY_LOWEST = 255;
 const uint8_t FKFS_FILE_PRIORITY_HIGHEST = 0;
 
 uint8_t dummy_reading(fk_module_t *fkm, fk_pool_t *fkp) {
-    debugfln("dummy: taking reading");
-
     fk_module_readings_t *readings = (fk_module_readings_t *)fk_pool_malloc(fkp, sizeof(fk_module_readings_t));
     APR_RING_INIT(readings, fk_module_reading_t, link);
 

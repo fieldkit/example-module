@@ -64,7 +64,6 @@ void fk_module_tick(fk_module_t *fkm) {
 }
 
 void fk_module_done_reading(fk_module_t *fkm, fk_module_readings_t *readings) {
-    debugfln("fk: done with reading");
     fkm->readings = readings;
     fkm->state = fk_module_state_t::DONE_READING;
 }

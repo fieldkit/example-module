@@ -2,7 +2,6 @@
 #include <Wire.h>
 
 #include <fk-module.h>
-#include <fk-master.h>
 #include <fk-core.h>
 #include <debug.h>
 
@@ -120,7 +119,7 @@ void setup() {
 
         fk_core_t core;
 
-        if (!fk_core_start(&core, core_pool)) {
+        if (!fk_core_start(&core, devices, core_pool)) {
             debugfln("fk-core: failed");
         }
 

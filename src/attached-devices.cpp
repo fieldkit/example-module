@@ -1,8 +1,7 @@
 #include <debug.h>
 
-#include "fk-master.h"
+#include "attached-devices.h"
 #include "comms.h"
-#include "attached-sensors.h"
 
 static bool fk_device_query_sensors(fk_device_t *device, fk_pool_t *fkp);
 

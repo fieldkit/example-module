@@ -21,7 +21,7 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
 
 static const char *fk_wifi_status_string();
 
-bool fk_core_start(fk_core_t *fkc, fk_pool_t *pool) {
+bool fk_core_start(fk_core_t *fkc, fk_device_ring_t *devices, fk_pool_t *pool) {
     WiFi.setPins(8, 7, 4, 2);
 
     if (WiFi.status() == WL_NO_SHIELD) {
@@ -58,6 +58,8 @@ bool fk_core_start(fk_core_t *fkc, fk_pool_t *pool) {
     void *server_memory = fk_pool_malloc(pool, sizeof(WiFiServer));
     fkc->server = new(server_memory) WiFiServer(FK_CORE_PORT_SERVER);
     fkc->server->begin();
+
+    fkc->devices = devices;
 
     return true;
 }

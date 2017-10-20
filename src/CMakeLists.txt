@@ -2,8 +2,8 @@ set(SOURCE_FILES
   fk-module-dummy.cpp
   fk-pool.cpp
   fk-module.cpp
-  fk-master.cpp
   fk-core.cpp
+  attached-devices.cpp
   debug.cpp
   readings.cpp
   protobuf.cpp

@@ -123,55 +123,9 @@ void setup() {
             debugfln("fk-core: failed");
         }
 
-        delay(1000);
-
         while (true) {
-            if (false) {
-                fk_device_t *d = nullptr;
-                APR_RING_FOREACH(d, devices, fk_device_t, link) {
-                    if (!fk_devices_begin_take_reading(d, reading_pool)) {
-                        debugfln("dummy: error beginning take readings");
-                    }
-                }
-
-                while (true) {
-                    bool done = false;
-                    APR_RING_FOREACH(d, devices, fk_device_t, link) {
-                        fk_module_readings_t *readings = nullptr;
-
-                        if (!fk_devices_reading_status(d, &readings, reading_pool)) {
-                            debugfln("dummy: error getting reading status");
-                            done = true;
-                            break;
-                        }
-
-                        if (readings != nullptr) {
-                            fk_module_reading_t *r = nullptr;
-
-                            APR_RING_FOREACH(r, readings, fk_module_reading_t, link) {
-                                debugfln("dummy: reading %d '%f'", r->time, r->value);
-                            }
-
-                            debugfln("dummy: done, (free = %d)", fk_free_memory());
-
-                            done = true;
-                        }
-                    }
-
-                    if (done) {
-                        fk_pool_empty(reading_pool);
-                        break;
-                    }
-
-                    delay(250);
-                }
-            }
-
-            uint32_t started = millis();
-            while (millis() - started < 5000) {
-                fk_core_tick(&core);
-                delay(10);
-            }
+            fk_core_tick(&core);
+            delay(10);
         }
     }
     else {

@@ -21,7 +21,7 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp);
 
 bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp);
 
-bool fk_devices_reading_status(fk_device_t *device, fk_module_readings_t **readings, fk_pool_t *fkp);
+bool fk_devices_reading_status(fk_device_t *device, uint8_t *status, fk_module_readings_t **readings, fk_pool_t *fkp);
 
 size_t fk_devices_number(fk_device_ring_t *devices);
 

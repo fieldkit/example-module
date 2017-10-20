@@ -76,7 +76,7 @@ bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp) {
     return true;
 }
 
-bool fk_devices_reading_status(fk_device_t *device, fk_module_readings_t **readings, fk_pool_t *fkp) {
+bool fk_devices_reading_status(fk_device_t *device, uint8_t *status, fk_module_readings_t **readings, fk_pool_t *fkp) {
     debugfln("fk[%d]: reading status", device->address);
 
     fk_module_WireMessageQuery query_message = fk_module_WireMessageQuery_init_default;
@@ -93,13 +93,16 @@ bool fk_devices_reading_status(fk_device_t *device, fk_module_readings_t **readi
     reply_message.sensorReadings.readings.funcs.decode = fk_pb_decode_readings; 
     reply_message.sensorReadings.readings.arg = (void *)fk_pb_reader_create(fkp);
 
-    uint8_t status = fk_i2c_device_poll(device->address, &reply_message, fkp, 1000);
-    if (status != WIRE_SEND_SUCCESS) {
+    if (fk_i2c_device_poll(device->address, &reply_message, fkp, 1000) != WIRE_SEND_SUCCESS) {
         return false;
     }
 
+    if (status != nullptr) {
+        (*status) = reply_message.readingStatus.state;
+    }
+
     switch (reply_message.readingStatus.state) {
-    case fk_module_ReadingState_DONE : {
+    case fk_module_ReadingState_DONE: {
         fk_pb_reader_t *reader = (fk_pb_reader_t *)reply_message.sensorReadings.readings.arg;
         (*readings) = reader->readings;
         break;

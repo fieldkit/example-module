@@ -1,5 +1,5 @@
-#ifndef FK_PROTOBUF_INCLUDED
-#define FK_PROTOBUF_INCLUDED
+#ifndef FK_PROTOBUF_H_INCLUDED
+#define FK_PROTOBUF_H_INCLUDED
 
 #include <fk-module-protocol.h>
 

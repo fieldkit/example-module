@@ -8,6 +8,7 @@
 #include "config.h"
 
 typedef struct fk_core_connection_t {
+    fk_pool_t *pool;
     WiFiClient *wifi;
 } fk_core_connection_t;
 
@@ -140,43 +141,32 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
     case fk_app_QueryType_QUERY_CAPABILITIES: {
         debugfln("fk-core: capabilities (callerTime = %d)", query->queryCapabilities.callerTime);
 
-        fk_app_SensorCapabilities sensors[] = {
-            {
-                .id = 0,
-                .name = {
-                    .funcs = {
-                        .encode = fk_pb_encode_string,
-                    },
-                    .arg = (void *)"Temperature",
-                },
-                .frequency = 60,
-            },
-            {
-                .id = 1,
-                .name = {
-                    .funcs = {
-                        .encode = fk_pb_encode_string,
-                    },
-                    .arg = (void *)"Humidity",
-                },
-                .frequency = 60,
-            },
-            {
-                .id = 2,
-                .name = {
-                    .funcs = {
-                        .encode = fk_pb_encode_string,
-                    },
-                    .arg = (void *)"Pressure",
-                },
-                .frequency = 60,
+        size_t number_of_sensors = 0;
+        fk_device_t *device = nullptr;
+        APR_RING_FOREACH(device, fkc->devices, fk_device_t, link) {
+            fk_attached_sensor_t *as = nullptr;
+            APR_RING_FOREACH(as, &device->sensors, fk_attached_sensor_t, link) {
+                number_of_sensors++;
             }
-        };
+        }
+
+        size_t sensor = 0;
+        fk_app_SensorCapabilities *sensors = (fk_app_SensorCapabilities *)fk_pool_malloc(cl->pool, sizeof(fk_app_SensorCapabilities) * number_of_sensors);
+        APR_RING_FOREACH(device, fkc->devices, fk_device_t, link) {
+            fk_attached_sensor_t *as = nullptr;
+            APR_RING_FOREACH(as, &device->sensors, fk_attached_sensor_t, link) {
+                sensors[sensor].id = sensor;
+                sensors[sensor].name.funcs.encode = fk_pb_encode_string;
+                sensors[sensor].name.arg = (void *)as->name;
+                sensors[sensor].frequency = 60;
+                sensor++;
+            }
+        }
 
         fk_pb_array_t sensors_array = {
-            .length = sizeof(sensors) / sizeof(fk_app_SensorCapabilities),
+            .length = number_of_sensors,
             .item_size = sizeof(fk_app_SensorCapabilities),
-            .buffer = &sensors,
+            .buffer = sensors,
             .fields = fk_app_SensorCapabilities_fields,
         };
 
@@ -390,7 +380,12 @@ static bool fk_core_connection_serve(fk_core_t *fkc) {
     // SOCKET_BUFFER_TCP_SIZE. Where SOCKET_BUFFER_TCP_SIZE is 1446.
     WiFiClient wifiCl = fkc->server->available();
     if (wifiCl) {
+        fk_pool_t *pool = nullptr;
+
+        fk_pool_create(&pool, 256, nullptr);
+
         fk_core_connection_t cl = {
+            .pool = pool,
             .wifi = &wifiCl,
         };
 
@@ -406,6 +401,8 @@ static bool fk_core_connection_serve(fk_core_t *fkc) {
                 }
             }
         }
+
+        fk_pool_free(cl.pool);
     }
 
     return false;

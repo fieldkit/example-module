@@ -1,8 +1,7 @@
-#ifndef FK_MASTER_INCLUDED
-#define FK_MASTER_INCLUDED
+#ifndef FK_ATTACHED_DEVICES_H_INCLUDED
+#define FK_ATTACHED_DEVICES_H_INCLUDED
 
-#include <apr_ring.h>
-
+#include "apr_ring.h"
 #include "protobuf.h"
 #include "attached-sensors.h"
 

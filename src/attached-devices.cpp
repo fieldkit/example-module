@@ -3,6 +3,13 @@
 #include "comms.h"
 
 static bool fk_device_query_sensors(fk_device_t *device, fk_pool_t *fkp);
+static fk_device_t *fk_device_query(uint8_t address, fk_pool_t *fkp);
+
+// Addresses we intentionally skip.
+static uint8_t blacklisted_addresses[] = {
+    104, // RTC
+    128  // EoL
+};
 
 fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
     fk_device_ring_t *devices = (fk_device_ring_t *)fk_pool_malloc(fkp, sizeof(fk_device_ring_t));
@@ -13,45 +20,16 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
 
     Wire.begin();
 
-    fk_module_WireMessageQuery wireMessage = fk_module_WireMessageQuery_init_default;
-    wireMessage.type = fk_module_QueryType_QUERY_CAPABILITIES;
-    wireMessage.queryCapabilities.version = FK_MODULE_PROTOCOL_VERSION;
-
-    for (uint8_t address = 1; address < 128; ++address) {
-        if (fk_i2c_device_send_message(address, fk_module_WireMessageQuery_fields, &wireMessage) == WIRE_SEND_SUCCESS) {
-            debugfln("fk[%d]: query caps...", address);
-
-            fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
-            reply_message.error.message.funcs.decode = fk_pb_decode_string;
-            reply_message.error.message.arg = fkp;
-            reply_message.capabilities.name.funcs.decode = fk_pb_decode_string;
-            reply_message.capabilities.name.arg = fkp;
-            reply_message.sensorReadings.readings.funcs.decode = fk_pb_decode_readings;
-            reply_message.sensorReadings.readings.arg = (void *)fk_pb_reader_create(fkp);
-
-            uint8_t status = fk_i2c_device_poll(address, &reply_message, fkp, 1000);
-            if (status == WIRE_SEND_SUCCESS && reply_message.capabilities.version > 0) {
-                debugfln("fk[%d]: found slave type=%d version=%d type=%d name=%s sensors=%d", address,
-                         reply_message.type, reply_message.capabilities.version,
-                         reply_message.capabilities.type,
-                         reply_message.capabilities.name.arg,
-                         reply_message.capabilities.numberOfSensors);
-
-                fk_device_t *n = (fk_device_t *)fk_pool_malloc(fkp, sizeof(fk_device_t));
-                n->address = address;
-                n->version = reply_message.capabilities.version;
-                n->type = reply_message.capabilities.type;
-                n->name = (const char *)reply_message.capabilities.name.arg;
-                n->number_of_sensors = reply_message.capabilities.numberOfSensors;
-
-                if (fk_device_query_sensors(n, fkp)) {
-                    APR_RING_INSERT_TAIL(devices, n, fk_device_t, link);
-                }
-            }
-            else {
-                debugfln("fk[%d]: bad handshake", address);
+    uint8_t address = 1;
+    for (uint8_t blacklist_index = 0; blacklisted_addresses[blacklist_index] != 128; blacklist_index++) {
+        for ( ; address < blacklisted_addresses[blacklist_index]; ++address) {
+            fk_device_t *device = fk_device_query(address, fkp);
+            if (device != nullptr) {
+                APR_RING_INSERT_TAIL(devices, device, fk_device_t, link);
             }
         }
+
+        address++;
     }
 
     return devices;
@@ -140,6 +118,49 @@ bool fk_devices_exists(fk_device_ring_t *devices, uint8_t address) {
         }
     }
     return false;
+}
+
+static fk_device_t *fk_device_query(uint8_t address, fk_pool_t *fkp) {
+    fk_module_WireMessageQuery wireMessage = fk_module_WireMessageQuery_init_default;
+    wireMessage.type = fk_module_QueryType_QUERY_CAPABILITIES;
+    wireMessage.queryCapabilities.version = FK_MODULE_PROTOCOL_VERSION;
+
+    if (fk_i2c_device_send_message(address, fk_module_WireMessageQuery_fields, &wireMessage) == WIRE_SEND_SUCCESS) {
+        debugfln("fk[%d]: query caps...", address);
+
+        fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
+        reply_message.error.message.funcs.decode = fk_pb_decode_string;
+        reply_message.error.message.arg = fkp;
+        reply_message.capabilities.name.funcs.decode = fk_pb_decode_string;
+        reply_message.capabilities.name.arg = fkp;
+        reply_message.sensorReadings.readings.funcs.decode = fk_pb_decode_readings;
+        reply_message.sensorReadings.readings.arg = (void *)fk_pb_reader_create(fkp);
+
+        uint8_t status = fk_i2c_device_poll(address, &reply_message, fkp, 1000);
+        if (status == WIRE_SEND_SUCCESS && reply_message.capabilities.version > 0) {
+            debugfln("fk[%d]: found slave type=%d version=%d type=%d name=%s sensors=%d", address,
+                        reply_message.type, reply_message.capabilities.version,
+                        reply_message.capabilities.type,
+                        reply_message.capabilities.name.arg,
+                        reply_message.capabilities.numberOfSensors);
+
+            fk_device_t *n = (fk_device_t *)fk_pool_malloc(fkp, sizeof(fk_device_t));
+            n->address = address;
+            n->version = reply_message.capabilities.version;
+            n->type = reply_message.capabilities.type;
+            n->name = (const char *)reply_message.capabilities.name.arg;
+            n->number_of_sensors = reply_message.capabilities.numberOfSensors;
+
+            if (fk_device_query_sensors(n, fkp)) {
+                return n;
+            }
+        }
+        else {
+            debugfln("fk[%d]: bad handshake", address);
+        }
+    }
+
+    return nullptr;
 }
 
 static bool fk_device_query_sensors(fk_device_t *device, fk_pool_t *fkp) {

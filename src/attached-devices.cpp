@@ -57,45 +57,56 @@ bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp) {
 bool fk_devices_reading_status(fk_device_t *device, uint8_t *status, fk_module_readings_t **readings, fk_pool_t *fkp) {
     debugfln("fk[%d]: reading status", device->address);
 
-    fk_module_WireMessageQuery query_message = fk_module_WireMessageQuery_init_default;
-    query_message.type = fk_module_QueryType_QUERY_READING_STATUS;
-    if (fk_i2c_device_send_message(device->address, fk_module_WireMessageQuery_fields, &query_message) != WIRE_SEND_SUCCESS) {
-        return false;
-    }
+    (*readings) = nullptr;
 
-    fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
-    reply_message.error.message.funcs.decode = fk_pb_decode_string; 
-    reply_message.error.message.arg = fkp; 
-    reply_message.capabilities.name.funcs.decode = fk_pb_decode_string; 
-    reply_message.capabilities.name.arg = fkp; 
-    reply_message.sensorReadings.readings.funcs.decode = fk_pb_decode_readings; 
-    reply_message.sensorReadings.readings.arg = (void *)fk_pb_reader_create(fkp);
+    while (true) {
+        fk_module_WireMessageQuery query_message = fk_module_WireMessageQuery_init_default;
+        query_message.type = fk_module_QueryType_QUERY_READING_STATUS;
+        if (fk_i2c_device_send_message(device->address, fk_module_WireMessageQuery_fields, &query_message) != WIRE_SEND_SUCCESS) {
+            return false;
+        }
 
-    if (fk_i2c_device_poll(device->address, &reply_message, fkp, 1000) != WIRE_SEND_SUCCESS) {
-        return false;
-    }
+        fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
+        reply_message.error.message.funcs.decode = fk_pb_decode_string; 
+        reply_message.error.message.arg = fkp; 
+        reply_message.capabilities.name.funcs.decode = fk_pb_decode_string; 
+        reply_message.capabilities.name.arg = fkp; 
 
-    if (status != nullptr) {
-        (*status) = reply_message.readingStatus.state;
-    }
+        if (fk_i2c_device_poll(device->address, &reply_message, fkp, 1000) != WIRE_SEND_SUCCESS) {
+            return false;
+        }
 
-    switch (reply_message.readingStatus.state) {
-    case fk_module_ReadingState_DONE: {
-        fk_pb_reader_t *reader = (fk_pb_reader_t *)reply_message.sensorReadings.readings.arg;
-        (*readings) = reader->readings;
-        break;
-    }
-    case fk_module_ReadingState_IDLE: {
-    }
-    case fk_module_ReadingState_BEGIN : {
-    }
-    case fk_module_ReadingState_BUSY : {
-    }
-    default: {
-        (*readings) = nullptr;
+        if (status != nullptr) {
+            (*status) = reply_message.readingStatus.state;
+        }
 
-        break;
-    }
+        switch (reply_message.readingStatus.state) {
+        case fk_module_ReadingState_DONE: {
+            debugfln("fk[%d] got reading (%d), will try again", device->address, reply_message.sensorReading.sensor);
+
+            if ((*readings) == nullptr) {
+                (*readings) = (fk_module_readings_t *)fk_pool_malloc(fkp, sizeof(fk_module_readings_t));
+                APR_RING_INIT((*readings), fk_module_reading_t, link);
+            }
+
+            fk_module_reading_t *n = (fk_module_reading_t *)fk_pool_malloc(fkp, sizeof(fk_module_reading_t));
+            n->sensor = reply_message.sensorReading.sensor;
+            n->time = reply_message.sensorReading.time;
+            n->value = reply_message.sensorReading.value;
+            APR_RING_INSERT_TAIL((*readings), n, fk_module_reading_t, link);
+
+            break;
+        }
+        case fk_module_ReadingState_IDLE: {
+        case fk_module_ReadingState_BEGIN : {
+        case fk_module_ReadingState_BUSY : {
+            debugfln("fk[%d] done (%d)", device->address);
+            return true;
+        }
+        default: {
+            break;
+        }
+        }
     }
 
     return true;
@@ -133,8 +144,6 @@ static fk_device_t *fk_device_query(uint8_t address, fk_pool_t *fkp) {
         reply_message.error.message.arg = fkp;
         reply_message.capabilities.name.funcs.decode = fk_pb_decode_string;
         reply_message.capabilities.name.arg = fkp;
-        reply_message.sensorReadings.readings.funcs.decode = fk_pb_decode_readings;
-        reply_message.sensorReadings.readings.arg = (void *)fk_pb_reader_create(fkp);
 
         uint8_t status = fk_i2c_device_poll(address, &reply_message, fkp, 1000);
         if (status == WIRE_SEND_SUCCESS && reply_message.capabilities.version > 0) {

@@ -199,11 +199,21 @@ static void module_reply(fk_serialized_message_t *incoming, fk_module_t *fkm) {
 
         switch (fkm->state) {
         case fk_module_state_t::DONE_READING: {
-            fkm->state = fk_module_state_t::IDLE;
-            reply_message.readingStatus.state = fk_module_ReadingState_DONE;
-            reply_message.sensorReadings.readings.funcs.encode = fk_pb_encode_readings;
-            reply_message.sensorReadings.readings.arg = fkm->readings;
-            free_readings_pool = true;
+            if (!APR_RING_EMPTY(fkm->readings, fk_module_reading_t, link)) {
+                fk_module_reading_t *r = APR_RING_FIRST(fkm->readings);
+                APR_RING_REMOVE(r, link);
+
+                reply_message.readingStatus.state = fk_module_ReadingState_DONE;
+                reply_message.sensorReading.sensor = r->sensor;
+                reply_message.sensorReading.time = r->time;
+                reply_message.sensorReading.value = r->value;
+
+                if (APR_RING_EMPTY(fkm->readings, fk_module_reading_t, link)) {
+                    fkm->state = fk_module_state_t::IDLE;
+                    free_readings_pool = true;
+                }
+            }
+
             break;
         }
         case fk_module_state_t::BUSY: {

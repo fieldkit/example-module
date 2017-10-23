@@ -42,6 +42,7 @@ bool fk_pb_encode_readings(pb_ostream_t *stream, const pb_field_t *field, void *
     fk_module_reading_t *r = nullptr;
     APR_RING_FOREACH(r, readings, fk_module_reading_t, link) {
         fk_module_SensorReading reading = fk_module_SensorReading_init_default;
+        reading.sensor = r->sensor;
         reading.time = r->time;
         reading.value = r->value;
 
@@ -71,6 +72,7 @@ bool fk_pb_decode_readings(pb_istream_t *stream, const pb_field_t *field, void *
     }
 
     fk_module_reading_t *n = (fk_module_reading_t *)fk_pool_malloc(reader->pool, sizeof(fk_module_reading_t));
+    n->sensor = wire_reading.sensor;
     n->time = wire_reading.time;
     n->value = wire_reading.value;
     APR_RING_INSERT_TAIL(reader->readings, n, fk_module_reading_t, link);

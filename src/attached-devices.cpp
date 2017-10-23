@@ -57,8 +57,6 @@ bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp) {
 bool fk_devices_reading_status(fk_device_t *device, uint8_t *status, fk_module_readings_t **readings, fk_pool_t *fkp) {
     debugfln("fk[%d]: reading status", device->address);
 
-    (*readings) = nullptr;
-
     while (true) {
         fk_module_WireMessageQuery query_message = fk_module_WireMessageQuery_init_default;
         query_message.type = fk_module_QueryType_QUERY_READING_STATUS;
@@ -76,9 +74,7 @@ bool fk_devices_reading_status(fk_device_t *device, uint8_t *status, fk_module_r
             return false;
         }
 
-        if (status != nullptr) {
-            (*status) = reply_message.readingStatus.state;
-        }
+        (*status) = reply_message.readingStatus.state;
 
         switch (reply_message.readingStatus.state) {
         case fk_module_ReadingState_DONE: {
@@ -97,8 +93,8 @@ bool fk_devices_reading_status(fk_device_t *device, uint8_t *status, fk_module_r
 
             break;
         }
-        case fk_module_ReadingState_IDLE: {
-        case fk_module_ReadingState_BEGIN : {
+        case fk_module_ReadingState_IDLE:
+        case fk_module_ReadingState_BEGIN :
         case fk_module_ReadingState_BUSY : {
             debugfln("fk[%d] done (%d)", device->address);
             return true;

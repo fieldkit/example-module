@@ -102,16 +102,10 @@ void fk_core_tick(fk_core_t *fkc) {
             fk_device_t *d = nullptr;
 
             APR_RING_FOREACH(d, fkc->devices, fk_device_t, link) {
-                fk_module_readings_t *readings = fkc->live_data.readings;
-
                 if (fkc->live_data.status != fk_module_ReadingState_IDLE) {
                     if (!fk_devices_reading_status(d, &fkc->live_data.status, &fkc->live_data.readings, fkc->live_data.pool)) {
                         debugfln("dummy: error getting reading status");
                         break;
-                    }
-
-                    if (readings != nullptr) {
-                        fkc->live_data.readings = readings;
                     }
                 }
                 else {
@@ -292,10 +286,13 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
         }
 
         fk_module_reading_t *r = nullptr;
-        fk_pb_data_t float_data = {
+        fk_pb_array_t live_data_array = {
             .length = 0,
+            .item_size = sizeof(fk_app_LiveDataSample),
             .buffer = nullptr,
+            .fields = fk_app_LiveDataSample_fields,
         };
+
 
         if (fkc->live_data.readings != nullptr) {
             size_t length = 0;
@@ -304,46 +301,24 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
             }
 
             if (length > 0) {
-                float *float_data_array = (float *)fk_pool_malloc(cl->pool, sizeof(float) * length);
-                float_data.length = length;
-                float_data.buffer = float_data_array;
+                fk_app_LiveDataSample *samples = (fk_app_LiveDataSample *)fk_pool_malloc(cl->pool, sizeof(fk_app_LiveDataSample) * length);
+                live_data_array.length = length;
+                live_data_array.buffer = samples;
 
                 size_t i = 0;
                 APR_RING_FOREACH(r, fkc->live_data.readings, fk_module_reading_t, link) {
-                    float_data_array[i++] = r->value;
+                    samples[i].sensor = r->sensor;
+                    samples[i].time = r->time;
+                    samples[i].value = r->value;
+                    i++;
                 }
             }
         }
 
-        fk_app_DataSetData live_data[] = {
-            {
-                .time = millis(),
-                .page = 0,
-                .sensor = 1,
-                .samples = { },
-                .floats = {
-                    .funcs = {
-                        .encode = fk_pb_encode_floats,
-                    },
-                    .arg = (void *)&float_data,
-                },
-                .data = {
-                },
-                .hash = 0,
-            },
-        };
-
-        fk_pb_array_t live_data_array = {
-            .length = sizeof(live_data) / sizeof(fk_app_DataSetData),
-            .item_size = sizeof(fk_app_DataSetData),
-            .buffer = &live_data,
-            .fields = fk_app_DataSetData_fields,
-        };
-
         fk_app_WireMessageReply reply_message = fk_app_WireMessageReply_init_zero;
         reply_message.type = fk_app_ReplyType_REPLY_LIVE_DATA_POLL;
-        reply_message.liveData.dataSetDatas.funcs.encode = fk_pb_encode_array;
-        reply_message.liveData.dataSetDatas.arg = (void *)&live_data_array;
+        reply_message.liveData.samples.funcs.encode = fk_pb_encode_array;
+        reply_message.liveData.samples.arg = (void *)&live_data_array;
 
         fk_core_connection_write(fkc, cl, &reply_message);
 

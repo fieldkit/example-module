@@ -18,8 +18,6 @@ static bool fk_core_connection_write(fk_core_t *fkc, fk_core_connection_t *cl, f
 
 static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t *cl, fk_app_WireMessageQuery *query);
 
-static const char *fk_wifi_status_string();
-
 bool fk_core_start(fk_core_t *fkc, fk_device_ring_t *devices, fk_pool_t *pool) {
     WiFi.setPins(8, 7, 4, 2);
 

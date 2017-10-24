@@ -6,6 +6,7 @@
 typedef struct fk_attached_sensor_t {
     uint32_t id;
     const char *name;
+    const char *unitOfMeasure;
     APR_RING_ENTRY(fk_attached_sensor_t) link;
 } fk_attached_sensor_t;
 

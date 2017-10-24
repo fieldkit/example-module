@@ -152,6 +152,8 @@ static void module_reply(fk_serialized_message_t *incoming, fk_module_t *fkm) {
         reply_message.sensorCapabilities.id = fkm->sensors[index].id;
         reply_message.sensorCapabilities.name.funcs.encode = fk_pb_encode_string;
         reply_message.sensorCapabilities.name.arg = (void *)fkm->sensors[index].name;
+        reply_message.sensorCapabilities.unitOfMeasure.funcs.encode = fk_pb_encode_string;
+        reply_message.sensorCapabilities.unitOfMeasure.arg = (void *)fkm->sensors[index].unitOfMeasure;
 
         fk_serialized_message_t *sm = fk_serialized_message_serialize(fk_module_WireMessageReply_fields, &reply_message, fkm->reply_pool);
         if (sm == nullptr) {

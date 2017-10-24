@@ -134,14 +134,17 @@ void setup() {
             {
                 .id = 0,
                 .name = "Depth",
+                .unitOfMeasure = "m",
             },
             {
                 .id = 1,
                 .name = "Temperature",
+                .unitOfMeasure = "°C",
             },
             {
                 .id = 2,
                 .name = "Conductivity",
+                .unitOfMeasure = "µS/cm",
             }
         };
 

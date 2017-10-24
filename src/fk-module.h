@@ -25,6 +25,7 @@ enum class fk_module_state_t {
 typedef struct fk_module_sensor_metadata_t {
     int32_t id;
     const char *name;
+    const char *unitOfMeasure;
 } fk_module_sensor_metadata_t;
 
 struct fk_module_t {

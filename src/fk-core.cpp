@@ -189,6 +189,8 @@ static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t
                 sensors[sensor].id = sensor;
                 sensors[sensor].name.funcs.encode = fk_pb_encode_string;
                 sensors[sensor].name.arg = (void *)as->name;
+                sensors[sensor].unitOfMeasure.funcs.encode = fk_pb_encode_string;
+                sensors[sensor].unitOfMeasure.arg = (void *)as->unitOfMeasure;
                 sensors[sensor].frequency = 60;
                 sensor++;
             }

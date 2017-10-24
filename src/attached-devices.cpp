@@ -65,10 +65,10 @@ bool fk_devices_reading_status(fk_device_t *device, uint8_t *status, fk_module_r
         }
 
         fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
-        reply_message.error.message.funcs.decode = fk_pb_decode_string; 
-        reply_message.error.message.arg = fkp; 
-        reply_message.capabilities.name.funcs.decode = fk_pb_decode_string; 
-        reply_message.capabilities.name.arg = fkp; 
+        reply_message.error.message.funcs.decode = fk_pb_decode_string;
+        reply_message.error.message.arg = fkp;
+        reply_message.capabilities.name.funcs.decode = fk_pb_decode_string;
+        reply_message.capabilities.name.arg = fkp;
 
         if (fk_i2c_device_poll(device->address, &reply_message, fkp, 1000) != WIRE_SEND_SUCCESS) {
             return false;
@@ -182,16 +182,21 @@ static bool fk_device_query_sensors(fk_device_t *device, fk_pool_t *fkp) {
             sensor_reply_message.error.message.arg = fkp;
             sensor_reply_message.sensorCapabilities.name.funcs.decode = fk_pb_decode_string;
             sensor_reply_message.sensorCapabilities.name.arg = (void *)fkp;
+            sensor_reply_message.sensorCapabilities.unitOfMeasure.funcs.decode = fk_pb_decode_string;
+            sensor_reply_message.sensorCapabilities.unitOfMeasure.arg = (void *)fkp;
 
             uint8_t status = fk_i2c_device_poll(device->address, &sensor_reply_message, fkp, 1000);
-            if (status == WIRE_SEND_SUCCESS) {
-                debugfln("fk[%d]: found sensor", device->address);
+            if (status != WIRE_SEND_SUCCESS) {
+                return false;
             }
 
             fk_attached_sensor_t *n = (fk_attached_sensor_t *)fk_pool_malloc(fkp, sizeof(fk_attached_sensor_t));
             n->id = sensor_reply_message.sensorCapabilities.id;
             n->name = (const char *)sensor_reply_message.sensorCapabilities.name.arg;
+            n->unitOfMeasure = (const char *)sensor_reply_message.sensorCapabilities.unitOfMeasure.arg;
             APR_RING_INSERT_TAIL(&device->sensors, n, fk_attached_sensor_t, link);
+
+            debugfln("fk[%d]: found sensor (%s in %s)", device->address, n->name, n->unitOfMeasure);
         }
     }
 

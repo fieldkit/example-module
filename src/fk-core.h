@@ -11,6 +11,7 @@
 #include "apr_ring.h"
 #include "fk-pool.h"
 #include "attached-devices.h"
+#include "rtc.h"
 
 typedef struct fk_live_data_t {
     fk_pool_t *pool = nullptr;
@@ -28,6 +29,7 @@ typedef struct fk_core_t {
     fk_device_ring_t *devices;
     WiFiUDP *udp;
     WiFiServer *server;
+    FkCoreRTC rtc;
 } fk_core_t;
 
 const uint16_t FK_CORE_PORT_UDP = 12344;

@@ -9,6 +9,7 @@
 #include "readings.h"
 #include "protobuf.h"
 #include "comms.h"
+#include "rtc.h"
 
 typedef struct fk_module_t fk_module_t;
 
@@ -40,6 +41,7 @@ struct fk_module_t {
     fk_module_readings_t *readings;
     fk_serialized_message_t *pending;
     fk_serialized_message_ring_t messages;
+    FkCoreRTC rtc;
 };
 
 bool fk_module_start(fk_module_t *fkm, fk_pool_t *pool);

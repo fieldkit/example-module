@@ -58,6 +58,8 @@ bool fk_core_start(fk_core_t *fkc, fk_device_ring_t *devices, fk_pool_t *pool) {
 
     fkc->devices = devices;
 
+    fkc->rtc.begin();
+
     fk_pool_create(&fkc->live_data.pool, 256, nullptr);
 
     return true;
@@ -170,7 +172,12 @@ static bool fk_core_connection_read(fk_core_t *fkc, fk_core_connection_t *cl, fk
 static bool fk_core_connection_handle_query(fk_core_t *fkc, fk_core_connection_t *cl, fk_app_WireMessageQuery *query) {
     switch (query->type) {
     case fk_app_QueryType_QUERY_CAPABILITIES: {
-        debugfln("fk-core: capabilities (callerTime = %d)", query->queryCapabilities.callerTime);
+        debugfln("fk-core: capabilities (time=%d)", query->queryCapabilities.callerTime);
+
+        if (query->queryCapabilities.callerTime > 0) {
+            // Once we're running on core boards regularly we can just use GPS here.
+            fkc->rtc.setTime(query->queryCapabilities.callerTime);
+        }
 
         size_t number_of_sensors = 0;
         fk_device_t *device = nullptr;

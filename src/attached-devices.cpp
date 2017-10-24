@@ -3,7 +3,8 @@
 #include "comms.h"
 
 static bool fk_device_query_sensors(fk_device_t *device, fk_pool_t *fkp);
-static fk_device_t *fk_device_query(uint8_t address, fk_pool_t *fkp);
+
+static fk_device_t *fk_device_query(uint8_t address, uint32_t now, fk_pool_t *fkp);
 
 // Addresses we intentionally skip.
 static uint8_t blacklisted_addresses[] = {
@@ -11,7 +12,7 @@ static uint8_t blacklisted_addresses[] = {
     128  // EoL
 };
 
-fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
+fk_device_ring_t *fk_devices_scan(get_time_fn get_time, fk_pool_t *fkp) {
     fk_device_ring_t *devices = (fk_device_ring_t *)fk_pool_malloc(fkp, sizeof(fk_device_ring_t));
 
     APR_RING_INIT(devices, fk_device_t, link);
@@ -20,10 +21,11 @@ fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp) {
 
     Wire.begin();
 
+    uint32_t now = get_time();
     uint8_t address = 1;
     for (uint8_t blacklist_index = 0; blacklisted_addresses[blacklist_index] != 128; blacklist_index++) {
         for ( ; address < blacklisted_addresses[blacklist_index]; ++address) {
-            fk_device_t *device = fk_device_query(address, fkp);
+            fk_device_t *device = fk_device_query(address, now, fkp);
             if (device != nullptr) {
                 APR_RING_INSERT_TAIL(devices, device, fk_device_t, link);
             }
@@ -127,10 +129,11 @@ bool fk_devices_exists(fk_device_ring_t *devices, uint8_t address) {
     return false;
 }
 
-static fk_device_t *fk_device_query(uint8_t address, fk_pool_t *fkp) {
+static fk_device_t *fk_device_query(uint8_t address, uint32_t now, fk_pool_t *fkp) {
     fk_module_WireMessageQuery wireMessage = fk_module_WireMessageQuery_init_default;
     wireMessage.type = fk_module_QueryType_QUERY_CAPABILITIES;
     wireMessage.queryCapabilities.version = FK_MODULE_PROTOCOL_VERSION;
+    wireMessage.queryCapabilities.callerTime = now;
 
     if (fk_i2c_device_send_message(address, fk_module_WireMessageQuery_fields, &wireMessage) == WIRE_SEND_SUCCESS) {
         debugfln("fk[%d]: query caps...", address);

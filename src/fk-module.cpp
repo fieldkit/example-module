@@ -13,6 +13,7 @@ bool fk_module_start(fk_module_t *fkm, fk_pool_t *pool) {
     }
 
     fkm->state = fk_module_state_t::START;
+    fkm->rtc.begin();
 
     if (!fk_pool_create(&fkm->reply_pool, 256, pool)) {
         return false;
@@ -120,6 +121,10 @@ static void module_reply(fk_serialized_message_t *incoming, fk_module_t *fkm) {
     switch (wire_message.type) {
     case fk_module_QueryType_QUERY_CAPABILITIES: {
         debugfln("fk: capabilities");
+
+        if (wire_message.queryCapabilities.callerTime > 0) {
+            fkm->rtc.setTime(wire_message.queryCapabilities.callerTime);
+        }
 
         fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
         reply_message.type = fk_module_ReplyType_REPLY_CAPABILITIES;

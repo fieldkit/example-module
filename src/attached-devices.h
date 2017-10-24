@@ -17,7 +17,9 @@ typedef struct fk_device_t {
 
 APR_RING_HEAD(fk_device_ring_t, fk_device_t);
 
-fk_device_ring_t *fk_devices_scan(fk_pool_t *fkp);
+typedef uint32_t (*get_time_fn)(void);
+
+fk_device_ring_t *fk_devices_scan(get_time_fn get_time, fk_pool_t *fkp);
 
 bool fk_devices_begin_take_reading(fk_device_t *device, fk_pool_t *fkp);
 

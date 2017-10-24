@@ -1,3 +1,13 @@
 #+TITLE:	README for fk-module-dummy
 #+AUTHOR:	Jacob Lewallen
 #+EMAIL:	jacob@conservify.org
+
+* Overview
+
+  Dummy project for developing the FK core firmware and module libraries.
+
+* C++ vs C
+
+  Right now this project is primarily C in C++ files. It will probably be slowly
+  migrated to C++17 though once things have stabilized and there's time for me
+  to re-familiarze myself with the modern landscape of C++.

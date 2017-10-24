@@ -22,7 +22,7 @@ uint8_t dummy_reading(fk_module_t *fkm, fk_pool_t *fkp) {
     for (size_t i = 0; i < 3; ++i) {
         fk_module_reading_t *reading = (fk_module_reading_t *)fk_pool_malloc(fkp, sizeof(fk_module_reading_t));
         reading->sensor = i;
-        reading->time = millis();
+        reading->time = fkm->rtc.getTime();
         reading->value = random(20, 150);
         APR_RING_INSERT_TAIL(readings, reading, fk_module_reading_t, link);
     }
@@ -102,7 +102,13 @@ void setup() {
     fk_pool_t *scan_pool = nullptr;
     fk_pool_create(&scan_pool, 512, nullptr);
 
-    fk_device_ring_t *devices = fk_devices_scan(scan_pool);
+    auto get_time = []() {
+        FkCoreRTC rtc;
+        rtc.begin();
+        return rtc.getTime();
+    };
+
+    fk_device_ring_t *devices = fk_devices_scan(get_time, scan_pool);
     bool master = fk_devices_exists(devices, 8);
 
     if (master) {

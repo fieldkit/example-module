@@ -6,6 +6,15 @@
 
   Dummy project for developing the FK core firmware and module libraries.
 
+* Building
+
+  cd ..
+  git clone arduino-cmake-minimal # clone
+  git clone simple-deps # install
+  # need arduino ide
+  cd example-module
+  simple-deps
+
 * C++ vs C
 
   Right now this project is primarily C in C++ files. It will probably be slowly

@@ -4,6 +4,6 @@ https://github.com/Conservify/Adafruit_ASFcore.git
 https://github.com/adafruit/Adafruit_ZeroDMA.git
 https://github.com/arduino-libraries/RTCZero.git
 https://github.com/adafruit/RTClib.git
-../fk-module-protocol
-../fk-app-protocol
+../module-protocol
+../app-protocol
 ../fkfs

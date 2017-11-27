@@ -2,14 +2,14 @@ BUILD=build
 
 default: core/config.h all
 
-$(BUILD):
-	mkdir -p $(BUILD)
-
 core/config.h:
 	cp core/config.h.template core/config.h
 
-all: $(BUILD)
+$(BUILD):
+	mkdir -p $(BUILD)
 	cd $(BUILD) && cmake ../
+
+all: $(BUILD)
 	cd $(BUILD) && make
 
 clean:

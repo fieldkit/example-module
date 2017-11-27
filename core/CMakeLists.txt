@@ -9,7 +9,7 @@ set(SOURCE_FILES
 set(LIBRARIES
   SPI
   Wire
-  ../modules
+  ../firmware-common/modules
 )
 
 include_directories(./)

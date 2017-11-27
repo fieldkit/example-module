@@ -1,4 +1,4 @@
-#+TITLE:	README for fk-module-dummy
+#+TITLE:	README for example-module
 #+AUTHOR:	Jacob Lewallen
 #+EMAIL:	jacob@conservify.org
 

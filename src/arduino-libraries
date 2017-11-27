@@ -1,4 +1,4 @@
-../modules
+../firmware-common/modules
 ../module-protocol
 https://github.com/nanopb/nanopb.git
 https://github.com/arduino-libraries/RTCZero.git

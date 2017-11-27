@@ -1,12 +1,12 @@
 BUILD=build
 
-default: src/config.h all
+default: core/config.h all
 
 $(BUILD):
 	mkdir -p $(BUILD)
 
-src/config.h:
-	cp src/config.h.template src/config.h
+core/config.h:
+	cp core/config.h.template core/config.h
 
 all: $(BUILD)
 	cd $(BUILD) && cmake ../

@@ -4,6 +4,7 @@
 #include "fk-core.h"
 #include "fk-app-protocol.h"
 #include "protobuf.h"
+#include "config.h"
 
 typedef struct fk_core_connection_t {
     fk_pool_t *pool;

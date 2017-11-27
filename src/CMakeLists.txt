@@ -1,14 +1,5 @@
 set(SOURCE_FILES
-  fk-module-dummy.cpp
-  fk-pool.cpp
-  fk-module.cpp
-  fk-core.cpp
-  attached-devices.cpp
-  debug.cpp
-  readings.cpp
-  protobuf.cpp
-  app-protobuf.cpp
-  comms.cpp
+  example-module.cpp
 )
 
 set(LIBRARIES
@@ -16,6 +7,4 @@ set(LIBRARIES
   Wire
 )
 
-include_directories(./)
-
-arduino(fk-module-dummy "${SOURCE_FILES}" "${LIBRARIES}")
+arduino(example-module "${SOURCE_FILES}" "${LIBRARIES}")

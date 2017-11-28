@@ -2,7 +2,6 @@
 #include <Wire.h>
 
 #include "fk-module.h"
-#include "debug.h"
 
 const uint8_t LED_PIN = 13;
 

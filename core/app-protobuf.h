@@ -3,6 +3,4 @@
 
 #include <fk-app-protocol.h>
 
-#include "fk-pool.h"
-
 #endif

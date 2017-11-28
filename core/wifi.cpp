@@ -1,4 +1,3 @@
-#include "fk-general.h"
 #include "fk-core.h"
 #include "wifi.h"
 

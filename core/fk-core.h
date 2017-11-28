@@ -8,10 +8,9 @@
 #include <WiFiServer.h>
 #include <WiFiUdp.h>
 
-#include "apr_ring.h"
-#include "fk-pool.h"
+#include "fk-module.h"
+
 #include "attached-devices.h"
-#include "rtc.h"
 
 typedef struct fk_live_data_t {
     fk_pool_t *pool = nullptr;

@@ -6,11 +6,16 @@ static fk_device_t *fk_device_query(uint8_t address, uint32_t now, fk_pool_t *fk
 
 // Addresses we intentionally skip.
 static uint8_t blacklisted_addresses[] = {
-    104, // RTC
-    128  // EoL
+    0x61, // DO
+    0x62, // ORP
+    0x63, // pH
+    0x64, // EC
+    0x66, // Temp
+     104, // RTC
+     128  // EoL
 };
 
-fk_device_ring_t *fk_devices_scan(get_time_fn get_time, fk_pool_t *fkp) {
+fk_device_ring_t *fk_devices_scan(get_time_fn get_time, uint8_t *expected_addresses, fk_pool_t *fkp) {
     fk_device_ring_t *devices = (fk_device_ring_t *)fk_pool_malloc(fkp, sizeof(fk_device_ring_t));
 
     APR_RING_INIT(devices, fk_device_t, link);
@@ -20,16 +25,26 @@ fk_device_ring_t *fk_devices_scan(get_time_fn get_time, fk_pool_t *fkp) {
     Wire.begin();
 
     uint32_t now = get_time();
-    uint8_t address = 1;
-    for (uint8_t blacklist_index = 0; blacklisted_addresses[blacklist_index] != 128; blacklist_index++) {
-        for ( ; address < blacklisted_addresses[blacklist_index]; ++address) {
-            fk_device_t *device = fk_device_query(address, now, fkp);
+    if (expected_addresses != nullptr) {
+        for (uint8_t idx = 0; expected_addresses[idx] != 0; idx++) {
+            fk_device_t *device = fk_device_query(expected_addresses[idx], now, fkp);
             if (device != nullptr) {
                 APR_RING_INSERT_TAIL(devices, device, fk_device_t, link);
             }
         }
+    }
+    else {
+        uint8_t address = 1;
+        for (uint8_t blacklist_index = 0; blacklisted_addresses[blacklist_index] != 128; blacklist_index++) {
+            for ( ; address < blacklisted_addresses[blacklist_index]; ++address) {
+                fk_device_t *device = fk_device_query(address, now, fkp);
+                if (device != nullptr) {
+                    APR_RING_INSERT_TAIL(devices, device, fk_device_t, link);
+                }
+            }
 
-        address++;
+            address++;
+        }
     }
 
     return devices;
@@ -133,9 +148,8 @@ static fk_device_t *fk_device_query(uint8_t address, uint32_t now, fk_pool_t *fk
     wireMessage.queryCapabilities.version = FK_MODULE_PROTOCOL_VERSION;
     wireMessage.queryCapabilities.callerTime = now;
 
+    debugfln("fk[%d]: query caps...", address);
     if (fk_i2c_device_send_message(address, fk_module_WireMessageQuery_fields, &wireMessage) == WIRE_SEND_SUCCESS) {
-        debugfln("fk[%d]: query caps...", address);
-
         fk_module_WireMessageReply reply_message = fk_module_WireMessageReply_init_zero;
         reply_message.error.message.funcs.decode = fk_pb_decode_string;
         reply_message.error.message.arg = fkp;

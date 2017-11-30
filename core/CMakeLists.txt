@@ -1,5 +1,5 @@
 set(SOURCE_FILES
-  example-core.cpp
+  main.cpp
   attached-devices.cpp
   wifi.cpp
   fk-core.cpp

@@ -1,7 +1,5 @@
 #include <fk-module.h>
 
-const uint8_t LED_PIN = 13;
-
 fk::SensorInfo mySensors[] = {
     {
         .sensor = 0,

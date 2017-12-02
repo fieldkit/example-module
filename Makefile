@@ -1,9 +1,6 @@
 BUILD=build
 
-default: core/config.h all
-
-core/config.h:
-	cp core/config.h.template core/config.h
+default: all
 
 $(BUILD):
 	mkdir -p $(BUILD)

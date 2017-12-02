@@ -1,5 +1,5 @@
 set(SOURCE_FILES
-  example-module.cpp
+  main.cpp
 )
 
 set(LIBRARIES

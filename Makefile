@@ -13,4 +13,4 @@ gitdeps:
 	simple-deps --config src/arduino-libraries
 
 clean:
-	rm -rf $(BUILD)
+	rm -rf $(BUILD) gitdeps

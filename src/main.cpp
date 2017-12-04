@@ -1,42 +1,17 @@
 #include <fk-module.h>
 
-fk::SensorInfo mySensors[] = {
-    {
-        .sensor = 0,
-        .name = "Depth",
-        .unitOfMeasure = "m",
-    },
-    {
-        .sensor = 1,
-        .name = "Temperature",
-        .unitOfMeasure = "°C",
-    },
-    {
-        .sensor = 2,
-        .name = "Conductivity",
-        .unitOfMeasure = "µS/cm",
-    }
-};
-
-fk::ModuleInfo myInfo = {
-    .address = 8,
-    .numberOfSensors = 3,
-    .name = "NOAA-CTD",
-    .sensors = mySensors,
-};
-
 class ExampleModule : public fk::Module {
 private:
 
 public:
-    ExampleModule();
+    ExampleModule(fk::ModuleInfo &info);
 
 public:
     void beginReading(fk::SensorReading *readings) override;
     void readingDone(fk::SensorReading *readings) override;
 };
 
-ExampleModule::ExampleModule() : Module(myInfo) {
+ExampleModule::ExampleModule(fk::ModuleInfo &info) : Module(info) {
 }
 
 void ExampleModule::beginReading(fk::SensorReading *readings) {
@@ -57,7 +32,18 @@ void setup() {
 
     debugfpln("Module", "Starting (%d free)", fk_free_memory());
 
-    ExampleModule module;
+    fk::ModuleInfo info = {
+        8,
+        3,
+        "NOAA-CTD",
+        { { "Depth", "m" },
+          { "Temperature", "°C" },
+          { "Conductivity", "µS/cm" }
+        },
+        { {}, {}, {} },
+    };
+
+    ExampleModule module(info);
 
     module.begin();
 

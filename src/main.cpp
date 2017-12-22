@@ -8,17 +8,12 @@ public:
 
 public:
     void beginReading(fk::SensorReading *readings) override;
-    void readingDone(fk::SensorReading *readings) override;
 };
 
 ExampleModule::ExampleModule(fk::ModuleInfo &info) : Module(info) {
 }
 
 void ExampleModule::beginReading(fk::SensorReading *readings) {
-    readingDone(readings);
-}
-
-void ExampleModule::readingDone(fk::SensorReading *readings) {
 }
 
 extern "C" {

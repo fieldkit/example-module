@@ -7,13 +7,13 @@ public:
     ExampleModule(fk::ModuleInfo &info);
 
 public:
-    fk::ModuleReadingStatus beginReading(fk::SensorReading *readings) override;
+    fk::ModuleReadingStatus beginReading(fk::PendingSensorReading &pending) override;
 };
 
 ExampleModule::ExampleModule(fk::ModuleInfo &info) : Module(info) {
 }
 
-fk::ModuleReadingStatus ExampleModule::beginReading(fk::SensorReading *readings) {
+fk::ModuleReadingStatus ExampleModule::beginReading(fk::PendingSensorReading &pending) {
     return fk::ModuleReadingStatus();
 }
 

@@ -2,6 +2,7 @@
 
 class ExampleModule : public fk::Module {
 private:
+    fk::TwoWireBus bus{ Wire };
 
 public:
     ExampleModule(fk::ModuleInfo &info);
@@ -10,7 +11,7 @@ public:
     fk::ModuleReadingStatus beginReading(fk::PendingSensorReading &pending) override;
 };
 
-ExampleModule::ExampleModule(fk::ModuleInfo &info) : Module(info) {
+ExampleModule::ExampleModule(fk::ModuleInfo &info) : Module(bus, info) {
 }
 
 fk::ModuleReadingStatus ExampleModule::beginReading(fk::PendingSensorReading &pending) {

@@ -1,10 +1,4 @@
-set(SOURCE_FILES
-  main.cpp
-)
+set(SOURCE_FILES main.cpp)
+set(LIBRARIES SPI Wire)
 
-set(LIBRARIES
-  SPI
-  Wire
-)
-
-arduino(example-module "${SOURCE_FILES}" "${LIBRARIES}")
+arduino(fk-example-module-standard "${SOURCE_FILES}" "${LIBRARIES}")

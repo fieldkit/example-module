@@ -33,7 +33,9 @@ void setup() {
         fk_module_ModuleType_SENSOR,
         8,
         3,
-        "NOAA-CTD",
+        1,
+        "Example Module",
+        "fk-ex-module",
         { { "Depth", "m" },
           { "Temperature", "°C" },
           { "Conductivity", "µS/cm" }

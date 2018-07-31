@@ -29,6 +29,14 @@ void setup() {
 
     loginfof("Module", "Starting (%d free)", fk_free_memory());
 
+    fk::SensorInfo sensors[3] = {
+        { "Depth", "m" },
+        { "Temperature", "°C" },
+        { "Conductivity", "µS/cm" }
+    };
+
+    fk::SensorReading readings[3];
+
     fk::ModuleInfo info = {
         fk_module_ModuleType_SENSOR,
         8,
@@ -36,11 +44,8 @@ void setup() {
         1,
         "Example Module",
         "fk-ex-module",
-        { { "Depth", "m" },
-          { "Temperature", "°C" },
-          { "Conductivity", "µS/cm" }
-        },
-        { {}, {}, {} },
+        sensors,
+        readings
     };
 
     ExampleModule module(info);

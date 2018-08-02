@@ -1,3 +1,4 @@
 build
 gitdeps
 src/config.h
+dependencies.cmake

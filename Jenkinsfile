@@ -2,6 +2,7 @@
 
 timestamps {
     node () {
-        conservifyBuild(name: 'example-module', repository: 'https://github.com/fieldkit/example-module.git')
+        conservifyBuild(name: 'example-module')
+        distributeFirmware()
     }
 }

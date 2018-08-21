@@ -1,7 +1,15 @@
-set(SOURCE_FILES main.cpp)
-set(LIBRARIES SPI Wire)
+include(Arduino)
 
-arduino(fk-example-module-standard "${SOURCE_FILES}" "${LIBRARIES}")
+enable_arduino_toolchain()
 
-add_definitions(-DPHYLUM_ENABLE_SERIAL_FLASH -DPHYLUM_ENABLE_SD)
-target_compile_options(arduino_zero_phylum PUBLIC -DPHYLUM_ENABLE_SERIAL_FLASH -DPHYLUM_ENABLE_SD)
+set(sources main.cpp)
+
+find_package(FkModule)
+
+add_arduino_library(fk-example-module-standard "${sources}")
+
+fk_configure_module(fk-example-module-standard)
+
+target_compile_options(fk-example-module-standard PRIVATE -Wall -Werror)
+
+add_arduino_firmware(fk-example-module-standard)

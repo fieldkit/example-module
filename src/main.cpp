@@ -27,7 +27,7 @@ void setup() {
         delay(100);
     }
 
-    loginfof("Module", "Starting (%d free)", fk_free_memory());
+    loginfof("Module", "Starting (%lu free)", fk_free_memory());
 
     fk::SensorInfo sensors[3] = {
         { "Depth", "m" },

@@ -10,7 +10,7 @@ all: $(BUILD)
 	cd $(BUILD) && make
 
 gitdeps:
-	simple-deps --config src/arduino-libraries
+	simple-deps --config src/dependencies.sd
 
 clean:
 	rm -rf $(BUILD)

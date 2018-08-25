@@ -2,10 +2,9 @@ include(Arduino)
 
 enable_arduino_toolchain()
 
-set(sources main.cpp)
-
 find_package(FkModule)
 
+set(sources main.cpp)
 add_arduino_library(fk-example-module-standard "${sources}")
 
 fk_configure_module(fk-example-module-standard)

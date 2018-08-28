@@ -1,5 +1,23 @@
 #include <fk-module.h>
 
+class TakeSensorReadings : public fk::ModuleServicesState {
+public:
+    const char *name() const override {
+        return "TakeSensorReadings";
+    }
+
+public:
+    void task() override;
+};
+
+void TakeSensorReadings::task() {
+    for (size_t i = 0; i < 3; ++i) {
+        services().readings->done(i, random(10, 20));
+    }
+
+    transit<fk::ModuleIdle>();
+}
+
 class ExampleModule : public fk::Module {
 private:
     fk::TwoWireBus bus{ Wire };
@@ -8,14 +26,16 @@ public:
     ExampleModule(fk::ModuleInfo &info);
 
 public:
-    fk::ModuleReadingStatus beginReading(fk::PendingSensorReading &pending) override;
+    fk::ModuleStates states() override {
+        return {
+            fk::ModuleFsm::deferred<fk::ConfigureModule>(),
+            fk::ModuleFsm::deferred<TakeSensorReadings>()
+        };
+    }
+
 };
 
 ExampleModule::ExampleModule(fk::ModuleInfo &info) : Module(bus, info) {
-}
-
-fk::ModuleReadingStatus ExampleModule::beginReading(fk::PendingSensorReading &pending) {
-    return fk::ModuleReadingStatus();
 }
 
 extern "C" {

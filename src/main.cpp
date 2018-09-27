@@ -18,7 +18,7 @@ void TakeSensorReadings::task() {
     transit<fk::ModuleIdle>();
 }
 
-class ExampleModule : public fk::Module {
+class ExampleModule : public fk::Module<fk::MinimumFlashState> {
 private:
     fk::TwoWireBus bus{ Wire };
 

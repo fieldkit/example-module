@@ -76,7 +76,9 @@ void setup() {
         "Example Module",
         "fk-ex-module",
         sensors,
-        readings
+        readings,
+        0,
+        fk_module_RequiredUptime_READINGS_ONLY,
     };
 
     ExampleModule module(info);

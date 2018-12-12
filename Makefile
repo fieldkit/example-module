@@ -7,7 +7,7 @@ $(BUILD): gitdeps
 	cd $(BUILD) && cmake ../
 
 all: $(BUILD)
-	cd $(BUILD) && make
+	$(MAKE) -C $(BUILD)
 
 gitdeps:
 	simple-deps --config src/dependencies.sd

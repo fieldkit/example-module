@@ -1,5 +1,28 @@
 #include <fk-module.h>
 
+namespace fk {
+
+Board board{
+    {
+        0,
+        0,
+        {
+            0,
+            0,
+            0,
+            0,
+        },
+        {
+            0,
+            0,
+            0,
+            0,
+        }
+    }
+};
+
+}
+
 class TakeSensorReadings : public fk::ModuleServicesState {
 public:
     const char *name() const override {
